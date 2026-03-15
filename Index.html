@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ballwin Treasure Hunt</title>
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=IM+Fell+English:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #f4e4bc;
+    --parchment-dark: #d4b483;
+    --parchment-shadow: #a07840;
+    --ink: #2c1a0e;
+    --ink-faded: #5c3d20;
+    --red-wax: #8b1a1a;
+    --gold: #c8860a;
+    --gold-light: #e8b84b;
+    --sea: #4a7fa0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a0f05;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, #2a1508 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, #0d0a05 0%, transparent 50%);
+    min-height: 100vh;
+    font-family: 'IM Fell English', serif;
+    overflow-x: hidden;
+  }
+
+  /* ── INTRO SCREEN ── */
+  #intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    position: relative;
+  }
+
+  .scroll-container {
+    background: var(--parchment);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E");
+    max-width: 680px;
+    width: 100%;
+    border-radius: 4px;
+    padding: 3rem 3.5rem;
+    position: relative;
+    box-shadow:
+      0 0 0 3px var(--parchment-dark),
+      0 0 0 6px var(--ink),
+      0 20px 60px rgba(0,0,0,0.8),
+      inset 0 0 80px rgba(160,120,64,0.3);
+    border: 2px solid var(--parchment-shadow);
+  }
+
+  .scroll-container::before, .scroll-container::after {
+    content: '';
+    position: absolute;
+    left: -18px; right: -18px;
+    height: 40px;
+    background: var(--parchment-dark);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  .scroll-container::before { top: -20px; }
+  .scroll-container::after { bottom: -20px; }
+
+  .scroll-cap {
+    position: absolute;
+    width: 20px; height: 44px;
+    background: var(--parchment-shadow);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    top: -22px;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+  .cap-tl { left: 20px; }
+  .cap-tr { right: 20px; }
+  .cap-bl { left: 20px; bottom: -22px; top: auto; }
+  .cap-br { right: 20px; bottom: -22px; top: auto; }
+
+  .scroll-title {
+    font-family: 'Pirata One', cursive;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    color: var(--ink);
+    text-align: center;
+    line-height: 1.1;
+    text-shadow: 2px 2px 0 rgba(160,120,64,0.4);
+    margin-bottom: 0.3rem;
+  }
+
+  .scroll-subtitle {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    text-align: center;
+    color: var(--ink-faded);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .divider {
+    text-align: center;
+    color: var(--gold);
+    font-size: 1.4rem;
+    margin: 0.8rem 0;
+    letter-spacing: 0.3em;
+  }
+
+  .intro-text {
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1.8;
+    text-align: justify;
+    margin-bottom: 1.5rem;
+  }
+
+  .intro-text em { color: var(--red-wax); font-style: italic; }
+
+  .quest-rules {
+    background: rgba(160,120,64,0.15);
+    border: 1px solid var(--parchment-shadow);
+    border-radius: 2px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+  }
+  .quest-rules h3 {
+    font-family: 'Pirata One', cursive;
+    color: var(--ink);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  .quest-rules ol {
+    color: var(--ink-faded);
+    font-size: 0.9rem;
+    padding-left: 1.2rem;
+    line-height: 1.9;
+  }
+
+  .begin-btn {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    background: var(--ink);
+    color: var(--gold-light);
+    font-family: 'Pirata One', cursive;
+    font-size: 1.4rem;
+    letter-spacing: 0.1em;
+    border: 2px solid var(--gold);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 0 var(--red-wax), 0 6px 12px rgba(0,0,0,0.5);
+    text-transform: uppercase;
+  }
+  .begin-btn:hover {
+    background: #3d2810;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--red-wax), 0 8px 16px rgba(0,0,0,0.5);
+  }
+  .begin-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--red-wax);
+  }
+
+  /* ── MAP SCREEN ── */
+  #map-screen {
+    display: none;
+    min-height: 100vh;
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .map-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .map-header h2 {
+    font-family: 'Pirata One', cursive;
+    color: var(--gold-light);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    text-shadow: 0 0 20px rgba(200,134,10,0.5);
+  }
+  .map-header p {
+    color: var(--parchment-dark);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 1rem;
+  }
+  .progress-label {
+    color: var(--gold);
+    font-size: 0.85rem;
+    font-family: 'Pirata One', cursive;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+  }
+  .progress-track {
+    height: 12px;
+    background: rgba(44,26,14,0.8);
+    border: 1px solid var(--parchment-shadow);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transition: width 0.6s ease;
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  /* The parchment map */
+  .map-parchment {
+    background: var(--parchment);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+    max-width: 680px;
+    width: 100%;
+    border-radius: 3px;
+    border: 3px solid var(--ink);
+    box-shadow:
+      0 0 0 1px var(--parchment-shadow),
+      0 20px 50px rgba(0,0,0,0.8),
+      inset 0 0 100px rgba(160,120,64,0.4);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Aged corners */
+  .map-parchment::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 0% 0%, rgba(100,60,20,0.3) 0%, transparent 40%),
+      radial-gradient(ellipse at 100% 0%, rgba(100,60,20,0.25) 0%, transparent 35%),
+      radial-gradient(ellipse at 0% 100%, rgba(100,60,20,0.3) 0%, transparent 40%),
+      radial-gradient(ellipse at 100% 100%, rgba(100,60,20,0.35) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .map-title-banner {
+    font-family: 'Pirata One', cursive;
+    color: var(--ink);
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 0.2rem;
+    position: relative;
+  }
+  .map-compass {
+    text-align: right;
+    font-size: 2.5rem;
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    opacity: 0.4;
+    line-height: 1;
+  }
+
+  /* Destination cards */
+  .destinations-grid {
+    display: grid;
+    gap: 0.8rem;
+    position: relative;
+    z-index: 1;
+    margin-top: 0.5rem;
+  }
+
+  .dest-card {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgba(212,180,131,0.5);
+    border: 1px solid var(--parchment-shadow);
+    border-radius: 2px;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .dest-card:hover:not(.locked) {
+    background: rgba(212,180,131,0.8);
+    transform: translateX(4px);
+    box-shadow: -4px 0 0 var(--gold), 2px 2px 8px rgba(0,0,0,0.3);
+  }
+  .dest-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: sepia(0.5);
+  }
+  .dest-card.completed {
+    background: rgba(180,220,160,0.25);
+    border-color: #6a9a4a;
+  }
+  .dest-card.active {
+    background: rgba(212,180,131,0.8);
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(200,134,10,0.4);
+    animation: pulse-gold 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 8px rgba(200,134,10,0.3); }
+    50% { box-shadow: 0 0 20px rgba(200,134,10,0.6); }
+  }
+
+  .dest-num {
+    width: 36px; height: 36px;
+    background: var(--ink);
+    color: var(--gold-light);
+    font-family: 'Pirata One', cursive;
+    font-size: 1.2rem;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border: 2px solid var(--gold);
+  }
+  .dest-card.completed .dest-num {
+    background: #4a7a2a;
+    border-color: #8aba6a;
+  }
+  .dest-card.locked .dest-num {
+    background: #3d3028;
+    border-color: #6d5040;
+  }
+
+  .dest-info { flex: 1; }
+  .dest-name {
+    font-family: 'Pirata One', cursive;
+    font-size: 1rem;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .dest-clue {
+    font-size: 0.78rem;
+    color: var(--ink-faded);
+    font-style: italic;
+    margin-top: 0.1rem;
+    line-height: 1.4;
+  }
+  .dest-card.locked .dest-clue,
+  .dest-card.locked .dest-name { color: #7a6050; }
+
+  .dest-status {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  /* Dashed path connector */
+  .path-connector {
+    text-align: center;
+    color: var(--parchment-shadow);
+    font-size: 0.8rem;
+    letter-spacing: 0.4em;
+    opacity: 0.6;
+    line-height: 1;
+    padding: 0.1rem 0;
+  }
+
+  /* ── DESTINATION SCREEN ── */
+  #dest-screen {
+    display: none;
+    min-height: 100vh;
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .dest-parchment {
+    background: var(--parchment);
+    max-width: 640px;
+    width: 100%;
+    border: 3px solid var(--ink);
+    box-shadow:
+      0 0 0 1px var(--parchment-shadow),
+      0 20px 50px rgba(0,0,0,0.8),
+      inset 0 0 80px rgba(160,120,64,0.3);
+    padding: 2rem 2.5rem;
+    position: relative;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .dest-parchment::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 0% 0%, rgba(100,60,20,0.35) 0%, transparent 45%),
+      radial-gradient(ellipse at 100% 100%, rgba(100,60,20,0.4) 0%, transparent 45%);
+    pointer-events: none;
+  }
+
+  .dest-header {
+    text-align: center;
+    margin-bottom: 1.2rem;
+    position: relative;
+  }
+
+  .dest-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+  }
+
+  .dest-screen-title {
+    font-family: 'Pirata One', cursive;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    color: var(--ink);
+    line-height: 1.1;
+    text-shadow: 1px 1px 0 rgba(160,120,64,0.5);
+  }
+
+  .dest-screen-subtitle {
+    font-style: italic;
+    color: var(--ink-faded);
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
+  }
+
+  .dest-lore {
+    color: var(--ink);
+    font-size: 0.95rem;
+    line-height: 1.8;
+    text-align: justify;
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .challenge-box {
+    background: rgba(44,26,14,0.08);
+    border: 1px dashed var(--parchment-shadow);
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    border-radius: 2px;
+    position: relative;
+  }
+  .challenge-box::before {
+    content: '⚔ Challenge ⚔';
+    font-family: 'Pirata One', cursive;
+    font-size: 0.8rem;
+    color: var(--red-wax);
+    letter-spacing: 0.15em;
+    position: absolute;
+    top: -0.55rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--parchment);
+    padding: 0 0.4rem;
+    white-space: nowrap;
+  }
+  .challenge-box p {
+    color: var(--ink);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  .coords-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    background: rgba(44,26,14,0.1);
+    border: 1px solid var(--parchment-shadow);
+    padding: 0.5rem 1rem;
+    margin: 0.8rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: var(--ink-faded);
+    border-radius: 2px;
+  }
+  .coords-strip a {
+    color: var(--red-wax);
+    text-decoration: none;
+    font-family: 'Pirata One', cursive;
+    font-size: 0.85rem;
+    border: 1px solid var(--red-wax);
+    padding: 0.2rem 0.5rem;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .coords-strip a:hover {
+    background: var(--red-wax);
+    color: var(--parchment);
+  }
+
+  .found-btn {
+    display: block;
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--red-wax);
+    color: var(--parchment);
+    font-family: 'Pirata One', cursive;
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+    border: 2px solid var(--ink);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 0 #4a0a0a, 0 6px 12px rgba(0,0,0,0.4);
+    margin-top: 0.5rem;
+  }
+  .found-btn:hover {
+    background: #a02020;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #4a0a0a, 0 8px 16px rgba(0,0,0,0.4);
+  }
+  .found-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a0a0a; }
+
+  .back-btn {
+    display: block;
+    width: 100%;
+    padding: 0.6rem;
+    background: transparent;
+    color: var(--ink-faded);
+    font-family: 'IM Fell English', serif;
+    font-size: 0.9rem;
+    font-style: italic;
+    border: 1px solid var(--parchment-shadow);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+  .back-btn:hover { background: rgba(44,26,14,0.1); color: var(--ink); }
+
+  .already-found {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    background: rgba(74,122,42,0.15);
+    border: 1px solid #6a9a4a;
+    border-radius: 2px;
+    color: #3a6a1a;
+    font-family: 'Pirata One', cursive;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+  }
+
+  /* ── VICTORY SCREEN ── */
+  #victory-screen {
+    display: none;
+    min-height: 100vh;
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .victory-scroll {
+    background: var(--parchment);
+    max-width: 640px;
+    width: 100%;
+    border: 4px solid var(--ink);
+    padding: 3rem 3rem;
+    position: relative;
+    border-radius: 3px;
+    box-shadow:
+      0 0 0 2px var(--gold),
+      0 0 0 4px var(--ink),
+      0 30px 80px rgba(0,0,0,0.9),
+      inset 0 0 100px rgba(200,134,10,0.2);
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .victory-scroll::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(200,134,10,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(200,134,10,0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .victory-icon {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 0.8rem;
+    animation: treasure-bounce 1.5s ease-in-out infinite;
+  }
+
+  @keyframes treasure-bounce {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-8px) rotate(3deg); }
+  }
+
+  .victory-title {
+    font-family: 'Pirata One', cursive;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    color: var(--ink);
+    text-shadow: 3px 3px 0 rgba(160,120,64,0.5);
+    margin-bottom: 0.3rem;
+  }
+
+  .victory-text {
+    font-size: 1rem;
+    color: var(--ink-faded);
+    line-height: 1.8;
+    margin: 1rem 0 1.5rem;
+    font-style: italic;
+  }
+
+  .victory-seal {
+    display: inline-block;
+    width: 90px; height: 90px;
+    background: var(--red-wax);
+    border-radius: 50%;
+    border: 4px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 1rem auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+    animation: seal-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes seal-glow {
+    0%, 100% { box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 20px rgba(139,26,26,0.4); }
+    50% { box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 40px rgba(139,26,26,0.7); }
+  }
+
+  .reset-btn {
+    display: inline-block;
+    padding: 0.7rem 2rem;
+    background: var(--ink);
+    color: var(--gold-light);
+    font-family: 'Pirata One', cursive;
+    font-size: 1.1rem;
+    border: 2px solid var(--gold);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    box-shadow: 0 3px 0 #0a0502;
+  }
+  .reset-btn:hover { background: #3d2810; transform: translateY(-2px); }
+
+  /* Fade animation */
+  .screen-fade { animation: fadeIn 0.5s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Wax seal stamp on intro */
+  .wax-seal {
+    position: absolute;
+    bottom: -28px;
+    right: 3rem;
+    width: 56px; height: 56px;
+    background: var(--red-wax);
+    border-radius: 50%;
+    border: 3px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    z-index: 10;
+  }
+
+  /* Torn edge effect bottom of map */
+  .torn-bottom {
+    height: 20px;
+    background: var(--parchment);
+    clip-path: polygon(0% 0%, 5% 100%, 10% 20%, 15% 90%, 22% 10%, 28% 80%, 34% 30%, 40% 100%, 47% 20%, 53% 85%, 59% 15%, 65% 90%, 71% 25%, 77% 75%, 83% 10%, 89% 95%, 94% 30%, 100% 0%);
+    margin-top: 0.5rem;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 480px) {
+    .scroll-container { padding: 2.5rem 2rem; }
+    .dest-parchment { padding: 1.5rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ INTRO ══ -->
+<div id="intro">
+  <div class="scroll-container screen-fade">
+    <div class="scroll-cap cap-tl"></div>
+    <div class="scroll-cap cap-tr"></div>
+    <div class="scroll-cap cap-bl"></div>
+    <div class="scroll-cap cap-br"></div>
+
+    <h1 class="scroll-title">The Ballwin<br>Treasure Hunt</h1>
+    <p class="scroll-subtitle">A Quest of Five Legendary Locations</p>
+    <div class="divider">✦ ✦ ✦</div>
+
+    <p class="intro-text">
+      Hearken, brave adventurer! The ancient treasures of Ballwin have been
+      scattered across the land by the mischievous <em>Spirit of Parkwatch</em>.
+      Five mighty artifacts now lie hidden in plain sight, waiting for a soul
+      bold enough to seek them out.
+    </p>
+    <p class="intro-text">
+      Armed with only your wits and this most sacred map, you must journey
+      from the great wilderness parks to the hallowed halls of history —
+      each destination revealing a piece of the <em>Grand Mystery of the West County</em>.
+    </p>
+
+    <div class="quest-rules">
+      <h3>⚓ Rules of the Quest</h3>
+      <ol>
+        <li>Visit each location in order — the path must not be broken.</li>
+        <li>Read the scroll at each destination carefully.</li>
+        <li>Complete the challenge to unlock the next location.</li>
+        <li>Collect all five seals to claim the final treasure!</li>
+      </ol>
+    </div>
+
+    <button class="begin-btn" onclick="showMap()">⚔ Begin the Quest ⚔</button>
+    <div class="wax-seal">🗺️</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ MAP ══ -->
+<div id="map-screen">
+  <div class="map-header">
+    <h2>🧭 Ye Olde Map of Ballwin</h2>
+    <p id="map-subtitle">Your quest awaits, brave soul...</p>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label">⚓ Quest Progress — <span id="prog-text">0 of 5 seals found</span></div>
+    <div class="progress-track">
+      <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="map-parchment screen-fade">
+    <div class="map-compass">🧭</div>
+    <div class="map-title-banner">~ The Five Sacred Sites ~</div>
+    <div class="divider" style="font-size:1rem;margin:0.3rem 0 0.8rem;">✦ ✦ ✦</div>
+
+    <div class="destinations-gr
