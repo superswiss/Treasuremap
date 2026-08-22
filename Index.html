@@ -2,851 +2,1584 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>GEO PUZZLE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Adventure Awaits</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;500;700&display=swap');
+/* ═══════════════════════════════════
+   DESIGN TOKENS — shared base
+═══════════════════════════════════ */
+:root {
+  --bg:      #090b14;
+  --bg2:     #101422;
+  --bg3:     #171b2e;
+  --border:  #252a44;
+  --border2: #353a5c;
+  --text:    #dde0f0;
+  --muted:   #6a6e90;
+  --accent:  #3de8a0;   /* spy green — overridden per mission */
+  --purple:  #8b7cf8;
+  --danger:  #f05a5a;
+  --warn:    #f0a030;
+  --gold:    #f0c030;
+  --r:  10px;
+  --rl: 16px;
+  --mono: 'Courier New', monospace;
+  --ui:   system-ui, -apple-system, sans-serif;
+}
 
-  :root {
-    --bg: #0a0f0d;
-    --surface: #111812;
-    --border: #1e2e22;
-    --accent: #39ff6e;
-    --accent-dim: #1a7a36;
-    --warn: #ff6b35;
-    --text: #d6ead9;
-    --muted: #5a7360;
-    --radius: 4px;
-  }
+/* Pirate mission overrides */
+body.pirate {
+  --accent:  #f0a030;
+  --purple:  #e05a20;
+  --bg:      #0d0a06;
+  --bg2:     #161008;
+  --bg3:     #1e1610;
+  --border:  #302010;
+  --border2: #483018;
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--ui); font-size: 15px; line-height: 1.6;
+}
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px;
-    gap: 14px;
-    overflow-x: hidden;
-  }
+/* ═══════════════════════════════════
+   SCREEN SYSTEM
+═══════════════════════════════════ */
+.screen { display: none; flex-direction: column; height: 100dvh; overflow: hidden; }
+.screen.active { display: flex; }
 
-  header {
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 10px;
-  }
+/* ═══════════════════════════════════
+   NAV
+═══════════════════════════════════ */
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--bg2);
+  border-bottom: 0.5px solid var(--border); flex-shrink: 0; z-index: 50;
+}
+.nav-logo { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; color: var(--accent); font-weight: 700; }
+.nav-icons { display: flex; gap: 4px; }
+.nav-btn {
+  background: none; border: 0.5px solid var(--border2); color: var(--muted);
+  border-radius: 8px; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 17px; transition: all 0.15s;
+}
+.nav-btn:hover { color: var(--accent); background: rgba(61,232,160,0.08); border-color: var(--accent); }
 
-  .logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
+/* ═══════════════════════════════════
+   SCROLL BODY
+═══════════════════════════════════ */
+.scroll-body {
+  flex: 1; overflow-y: auto;
+  padding: 18px 15px 36px;
+  max-width: 460px; margin: 0 auto; width: 100%;
+}
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-  #timer-display {
-    font-family: 'Space Mono', monospace;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 0.05em;
-    transition: color 0.3s;
-  }
-  #timer-display.warning { color: var(--warn); }
+/* ═══════════════════════════════════
+   CARDS
+═══════════════════════════════════ */
+.card {
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: var(--rl); padding: 16px; margin-bottom: 14px;
+}
+.card-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 8px; display: block;
+}
 
-  /* ── PERMISSION SCREEN ── */
-  #perm-screen {
-    width: 100%;
-    max-width: 480px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    text-align: center;
-  }
+/* ═══════════════════════════════════
+   MISSION SELECT
+═══════════════════════════════════ */
+.mission-card {
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: var(--rl); padding: 20px; margin-bottom: 14px;
+  cursor: pointer; transition: all 0.2s; text-align: left; width: 100%;
+}
+.mission-card:hover { border-color: var(--accent); background: var(--bg3); }
+.mission-card:active { transform: scale(0.98); }
+.mission-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+.mission-name { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.mission-sub { font-size: 13px; color: var(--muted); }
+.mission-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; padding: 2px 8px; border-radius: 20px;
+  margin-top: 8px; text-transform: uppercase;
+}
 
-  .perm-icon {
-    font-size: 48px;
-    line-height: 1;
-  }
+/* ═══════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════ */
+.pbar-wrap { padding: 8px 14px 0; max-width: 460px; margin: 0 auto; width: 100%; flex-shrink: 0; }
+.pbar-track { background: var(--bg3); border-radius: 3px; height: 3px; }
+.pbar-fill { background: var(--accent); border-radius: 3px; height: 3px; transition: width 0.5s ease; }
+.pbar-label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 3px; }
 
-  #perm-screen h2 {
-    font-family: 'Space Mono', monospace;
-    font-size: 16px;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-  }
+/* ═══════════════════════════════════
+   STAGE HEADER
+═══════════════════════════════════ */
+.stage-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 4px; }
+.stage-title { font-size: 21px; font-weight: 700; color: var(--text); margin-bottom: 14px; line-height: 1.25; }
+.type-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 14px; text-transform: uppercase;
+}
+.t-geo    { background: rgba(61,232,160,0.1);  color: var(--accent); border: 0.5px solid var(--accent); }
+.t-quiz   { background: rgba(240,160,48,0.1);  color: var(--warn);   border: 0.5px solid var(--warn); }
+.t-final  { background: rgba(240,192,48,0.1);  color: var(--gold);   border: 0.5px solid var(--gold); }
+.t-riddle { background: rgba(139,124,248,0.12);color: var(--purple); border: 0.5px solid var(--purple); }
+.t-qr     { background: rgba(240,160,48,0.1);  color: var(--warn);   border: 0.5px solid var(--warn); }
+.t-confirm{ background: rgba(240,192,48,0.1);  color: var(--gold);   border: 0.5px solid var(--gold); }
+.t-timed  { background: rgba(240,90,90,0.1);   color: var(--danger); border: 0.5px solid var(--danger); }
 
-  #perm-screen p {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.65;
-    max-width: 320px;
-  }
+/* ═══════════════════════════════════
+   NARRATIVE BOX
+═══════════════════════════════════ */
+.narrative {
+  background: var(--bg3); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 14px 16px; font-size: 14px; line-height: 1.75;
+  color: #c8cce8; margin-bottom: 16px; font-style: italic;
+}
+body.pirate .narrative { border-left-color: var(--accent); color: #d8c8a8; }
 
-  #perm-btn {
-    padding: 14px 28px;
-    background: var(--accent);
-    color: var(--bg);
-    border: none;
-    border-radius: var(--radius);
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  #perm-btn:active { opacity: 0.7; }
+/* ═══════════════════════════════════
+   GEO STATUS
+═══════════════════════════════════ */
+.geo-status {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: var(--r);
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  margin-bottom: 12px; font-size: 14px;
+}
+.geo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.geo-dot.checking { background: var(--warn); animation: pulse 1s infinite; }
+.geo-dot.close    { background: var(--accent); }
+.geo-dot.far      { background: var(--danger); }
 
-  #perm-error {
-    color: var(--warn);
-    font-size: 12px;
-    font-family: 'Space Mono', monospace;
-    min-height: 1.4em;
-  }
+/* ═══════════════════════════════════
+   MULTIPLE CHOICE
+═══════════════════════════════════ */
+.mc-question {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  margin-bottom: 14px; line-height: 1.4;
+}
+.mc-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.mc-option {
+  width: 100%; padding: 13px 16px; text-align: left;
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: var(--r); color: var(--text); font-size: 14px;
+  cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px;
+}
+.mc-option:hover  { border-color: var(--accent); color: var(--accent); background: rgba(61,232,160,0.05); }
+.mc-option.correct { border-color: var(--accent); background: rgba(61,232,160,0.1); color: var(--accent); pointer-events: none; }
+.mc-option.wrong   { border-color: var(--danger); background: rgba(240,90,90,0.07); color: var(--danger); pointer-events: none; }
+.mc-option.disabled { opacity: 0.4; pointer-events: none; }
+.mc-key {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid currentColor; opacity: 0.7;
+}
+body.pirate .mc-option:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* ── START SCREEN ── */
-  #start-screen {
-    width: 100%;
-    max-width: 480px;
-    flex: 1;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    text-align: center;
-  }
+/* ═══════════════════════════════════
+   INPUTS / BUTTONS
+═══════════════════════════════════ */
+.answer-input {
+  width: 100%; padding: 12px 14px;
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: var(--r); color: var(--text);
+  font-size: 16px; font-family: var(--mono); letter-spacing: 0.06em;
+  transition: border-color 0.15s; outline: none; margin-bottom: 10px;
+}
+.answer-input:focus  { border-color: var(--purple); }
+.answer-input.correct{ border-color: var(--accent); background: rgba(61,232,160,0.05); }
+.answer-input.wrong  { border-color: var(--danger); background: rgba(240,90,90,0.05); }
 
-  #start-screen h1 {
-    font-family: 'Space Mono', monospace;
-    font-size: 22px;
-    color: var(--accent);
-    letter-spacing: 0.1em;
-    line-height: 1.3;
-  }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: var(--r);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  border: none; transition: all 0.15s; width: 100%;
+}
+.btn + .btn { margin-top: 10px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+.btn-primary   { background: var(--accent); color: #061810; }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-primary:active:not(:disabled){ transform: scale(0.98); }
+.btn-secondary { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border2); }
+.btn-secondary:hover:not(:disabled){ border-color: var(--purple); color: var(--purple); }
+.btn-danger    { background: rgba(240,90,90,0.1); color: var(--danger); border: 0.5px solid var(--danger); }
+.btn-warn      { background: rgba(240,160,48,0.1); color: var(--warn); border: 0.5px solid var(--warn); }
+body.pirate .btn-primary { color: #1a0a00; }
 
-  #start-screen p {
-    color: var(--muted);
-    line-height: 1.6;
-    max-width: 340px;
-    font-size: 13px;
-  }
+/* ═══════════════════════════════════
+   FEEDBACK
+═══════════════════════════════════ */
+.feedback { font-size: 13px; padding: 10px 14px; border-radius: var(--r); margin-bottom: 10px; display: none; }
+.fb-ok   { display: block; background: rgba(61,232,160,0.08);  color: var(--accent); border: 0.5px solid var(--accent); }
+.fb-err  { display: block; background: rgba(240,90,90,0.08);   color: var(--danger); border: 0.5px solid var(--danger); }
+.fb-warn { display: block; background: rgba(240,160,48,0.08);  color: var(--warn);   border: 0.5px solid var(--warn); }
 
-  #start-btn {
-    padding: 14px 32px;
-    background: var(--accent);
-    color: var(--bg);
-    border: none;
-    border-radius: var(--radius);
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  #start-btn:active { opacity: 0.7; }
+/* ═══════════════════════════════════
+   STEVE / NARRATOR AVATAR
+═══════════════════════════════════ */
+.narrator-wrap { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+.narrator-avatar {
+  width: 46px; height: 46px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; border: 1.5px solid var(--accent);
+  background: rgba(61,232,160,0.07); transition: all 0.5s;
+}
+.narrator-avatar.corrupt { border-color: var(--danger); background: rgba(240,90,90,0.08); animation: flicker 3s infinite; }
+.narrator-avatar.evil    { border-color: var(--danger); background: rgba(240,90,90,0.12); }
+.narrator-name { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 3px; }
+.narrator-name.corrupt { color: var(--warn); }
+.narrator-name.evil    { color: var(--danger); }
+.narrator-speech {
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: 0 10px 10px 10px; padding: 12px 14px;
+  font-size: 14px; line-height: 1.7; color: #c8cce8; font-style: italic; flex: 1;
+}
+.narrator-speech.corrupt { border-color: rgba(240,90,90,0.4); color: #d8c0c0; }
+.narrator-speech.evil    { border-color: var(--danger); color: #e8a0a0; font-style: normal; }
 
-  /* ── GAME UI ── */
-  .game-ui {
-    display: none;
-    width: 100%;
-    max-width: 480px;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-  }
-  .game-ui.active { display: flex; }
+/* ═══════════════════════════════════
+   TRAY GRID
+═══════════════════════════════════ */
+.tray-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 10px; }
+.tray-slot {
+  aspect-ratio: 1; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; border: 1.5px dashed var(--border2);
+  background: var(--bg3); position: relative; transition: all 0.4s;
+}
+.tray-slot.collected { border-style: solid; border-color: var(--gold); background: rgba(240,192,48,0.06); }
+.tray-slot.collected::after {
+  content: ''; position: absolute; bottom: 4px; right: 4px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+}
 
-  .progress-bar-wrap {
-    width: 100%;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  #progress-bar {
-    height: 100%;
-    background: var(--accent);
-    width: 100%;
-    transition: width 1s linear, background 0.3s;
-  }
-  #progress-bar.warning { background: var(--warn); }
+/* ═══════════════════════════════════
+   MAP
+═══════════════════════════════════ */
+#leaflet-map { width: 100%; height: 100%; min-height: 200px; }
+#map-container { flex: 1; position: relative; overflow: hidden; }
+.map-legend {
+  position: absolute; bottom: 16px; left: 12px; z-index: 1000;
+  background: rgba(9,11,20,0.92); border: 0.5px solid var(--border2);
+  border-radius: var(--r); padding: 10px 14px; font-size: 11px; backdrop-filter: blur(6px);
+}
+.leg-item { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; color: var(--text); }
+.leg-item:last-child { margin-bottom: 0; }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); }
 
-  .status-bar {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .pip {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--border);
-    border: 1px solid var(--muted);
-    transition: background 0.3s, box-shadow 0.3s;
-  }
-  .pip.hit {
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-    border-color: var(--accent);
-  }
-  .pip-label {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    flex: 1;
-  }
+/* ═══════════════════════════════════
+   DOSSIER
+═══════════════════════════════════ */
+.code-box {
+  font-family: var(--mono); font-size: 14px; letter-spacing: 0.1em; padding: 13px 14px;
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: var(--r); display: flex; justify-content: space-between;
+  align-items: center; gap: 10px; color: var(--accent); word-break: break-all; margin-bottom: 8px;
+}
+.inline-btn {
+  background: rgba(61,232,160,0.1); border: 0.5px solid var(--accent);
+  color: var(--accent); border-radius: 6px; padding: 5px 11px; font-size: 11px; cursor: pointer; flex-shrink: 0;
+}
+.inline-btn:hover { background: rgba(61,232,160,0.2); }
+.paste-input {
+  width: 100%; padding: 11px 14px;
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: var(--r); color: var(--text);
+  font-size: 14px; font-family: var(--mono); letter-spacing: 0.06em;
+  resize: none; outline: none; transition: border-color 0.15s; margin-bottom: 8px;
+}
+.paste-input:focus { border-color: var(--purple); }
 
-  #message {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    letter-spacing: 0.05em;
-    min-height: 1.4em;
-    text-align: center;
-  }
-  #message.fail { color: var(--warn); }
-  #message.ok   { color: var(--accent); }
+/* ═══════════════════════════════════
+   PIN PAD
+═══════════════════════════════════ */
+.pinpad { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 8px 0; }
+.pin-display { display: flex; gap: 10px; margin-bottom: 4px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--border2); background: transparent; transition: all 0.15s; }
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-dot.error  { background: var(--danger); border-color: var(--danger); }
+.pin-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; width: 100%; max-width: 240px; }
+.pin-key {
+  background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text);
+  border-radius: 10px; padding: 14px; font-size: 20px; font-weight: 600;
+  cursor: pointer; text-align: center; transition: all 0.12s; user-select: none; font-family: var(--mono);
+}
+.pin-key:hover  { background: var(--border2); color: var(--accent); }
+.pin-key:active { transform: scale(0.94); }
+.pin-hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; max-width: 280px; }
 
-  /* ── MINI MAP ── */
-  #map-wrap {
-    width: 100%;
-    aspect-ratio: 1;
-    background: #0d1a10;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    position: relative;
-  }
-  #map-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-  .map-legend {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .map-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    font-family: 'Space Mono', monospace;
-    color: var(--muted);
-  }
-  .map-legend-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+/* ═══════════════════════════════════
+   GEOPUZZLE NODE CARDS
+═══════════════════════════════════ */
+.node-pip-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.node-pip { width: 11px; height: 11px; border-radius: 50%; background: var(--border2); border: 1px solid var(--muted); transition: background 0.3s, box-shadow 0.3s; }
+.node-pip.hit { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.node-pip-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; flex: 1; }
+.node-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.node-card { background: var(--bg3); border: 0.5px solid var(--border2); border-radius: var(--r); padding: 14px; transition: border-color 0.3s, background 0.3s; }
+.node-card.nc-active { border-color: rgba(61,232,160,0.4); }
+.node-card.nc-done   { border-color: var(--accent); background: rgba(61,232,160,0.06); }
+.nc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.nc-label  { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
+.nc-label.done-label { color: var(--accent); }
+.nc-dist   { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.nc-dist.close { color: var(--accent); }
+.nc-btn {
+  width: 100%; padding: 13px; background: transparent; border: 0.5px solid var(--border2);
+  border-radius: var(--r); color: var(--muted); font-family: var(--mono);
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: not-allowed; transition: all 0.2s;
+}
+.nc-btn.unlocked { border-color: var(--accent); color: var(--accent); cursor: pointer; animation: nodepulse 2s infinite; }
+.nc-btn.unlocked:active { background: var(--accent); color: var(--bg); }
+.nc-btn.captured { border-color: var(--accent); color: var(--accent); cursor: default; opacity: 0.6; animation: none; }
 
-  /* ── NODE CARDS ── */
-  .buttons-grid {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+/* ═══════════════════════════════════
+   COUNTDOWN RING
+═══════════════════════════════════ */
+.countdown-wrap { text-align: center; margin-bottom: 16px; }
+.countdown-ring { position: relative; width: 100px; height: 100px; margin: 0 auto 8px; }
+.countdown-ring svg { transform: rotate(-90deg); }
+.countdown-ring circle { fill: none; stroke: var(--border2); stroke-width: 4; }
+.countdown-ring .arc { stroke: var(--danger); stroke-width: 4; stroke-dasharray: 283; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear, stroke 0.5s; stroke-linecap: round; }
+.countdown-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--danger); }
+.countdown-label { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+.countdown-wrap.warning  .arc { stroke: var(--warn); }
+.countdown-wrap.warning  .countdown-num { color: var(--warn); }
+.countdown-wrap.critical .arc { stroke: var(--danger); animation: beep 0.5s infinite; }
+.countdown-wrap.critical .countdown-num { color: var(--danger); animation: beep 0.5s infinite; }
 
-  .node-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    background: var(--surface);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: border-color 0.3s;
-  }
-  .node-card.active { border-color: var(--accent-dim); }
-  .node-card.done   { border-color: var(--accent); background: #0d1e11; }
-  .node-card.done .node-label { color: var(--accent); }
+/* ═══════════════════════════════════
+   COMPLETE SCREEN
+═══════════════════════════════════ */
+.complete-seal {
+  width: 104px; height: 104px; border-radius: 50%;
+  border: 3px solid var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 50px; margin: 0 auto 20px;
+  background: rgba(240,192,48,0.08);
+  animation: glowpulse 2.5s ease-in-out infinite;
+}
 
-  .node-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .node-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .node-dist {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .node-dist.close { color: var(--accent); }
+/* ═══════════════════════════════════
+   MODAL
+═══════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 5000;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-sheet {
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: 20px 20px 0 0; padding: 24px 18px 40px;
+  width: 100%; max-width: 460px; max-height: 85dvh; overflow-y: auto;
+}
+.modal-handle { width: 40px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: var(--accent); }
+.modal-section { margin-bottom: 14px; }
+.modal-section h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.modal-section p  { font-size: 13px; color: var(--muted); line-height: 1.65; }
 
-  .node-btn {
-    width: 100%;
-    padding: 12px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    cursor: not-allowed;
-    transition: all 0.2s;
-    text-transform: uppercase;
-  }
-  .node-btn.unlocked {
-    border-color: var(--accent);
-    color: var(--accent);
-    cursor: pointer;
-    animation: pulse 2s infinite;
-  }
-  .node-btn.unlocked:active { background: var(--accent); color: var(--bg); animation: none; }
-  .node-btn.done-btn {
-    border-color: var(--accent);
-    color: var(--accent);
-    cursor: default;
-    animation: none;
-    opacity: 0.5;
-  }
+/* ═══════════════════════════════════
+   QR VIDEO
+═══════════════════════════════════ */
+#qr-video { width: 100%; border-radius: var(--r); border: 0.5px solid var(--border2); }
 
-  @keyframes pulse {
-    0%,100% { box-shadow: 0 0 0 0 rgba(57,255,110,0.3); }
-    50%      { box-shadow: 0 0 0 6px rgba(57,255,110,0); }
-  }
+/* ═══════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════ */
+@keyframes pulse    { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+@keyframes flicker  { 0%,100%{opacity:1;} 92%{opacity:1;} 93%{opacity:0.4;} 94%{opacity:1;} 97%{opacity:0.6;} 98%{opacity:1;} }
+@keyframes beep     { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+@keyframes glowpulse{ 0%,100%{box-shadow:0 0 0 0 rgba(240,192,48,0.3);} 50%{box-shadow:0 0 0 14px rgba(240,192,48,0);} }
+@keyframes nodepulse{ 0%,100%{box-shadow:0 0 0 0 rgba(61,232,160,0.3);} 50%{box-shadow:0 0 0 6px rgba(61,232,160,0);} }
+@keyframes scanin   { 0%{transform:translateY(-4px);opacity:0;} 100%{transform:translateY(0);opacity:1;} }
+.scanin { animation: scanin 0.35s ease forwards; }
+.unlock-flash { position: fixed; inset: 0; background: rgba(61,232,160,0.1); pointer-events: none; z-index: 9998; animation: flashout 0.6s ease-out forwards; }
+.evil-flash   { background: rgba(240,90,90,0.14); }
+@keyframes flashout { 0%{opacity:1;} 100%{opacity:0;} }
 
-  /* ── END SCREEN ── */
-  #end-screen {
-    display: none;
-    width: 100%;
-    max-width: 480px;
-    flex: 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    text-align: center;
-  }
-  #end-screen h2 {
-    font-family: 'Space Mono', monospace;
-    font-size: 24px;
-    letter-spacing: 0.08em;
-  }
-  #end-screen.win  h2 { color: var(--accent); }
-  #end-screen.lose h2 { color: var(--warn); }
-  #end-screen p { color: var(--muted); font-size: 13px; line-height: 1.6; }
-
-  #restart-btn {
-    padding: 12px 28px;
-    background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: all 0.2s;
-  }
-  #restart-btn:active { background: var(--accent); color: var(--bg); }
+/* leaflet overrides */
+.leaflet-popup-content-wrapper { background: #171b2e !important; color: #dde0f0 !important; border: 0.5px solid #353a5c !important; border-radius: 10px !important; box-shadow: none !important; }
+.leaflet-popup-tip { background: #171b2e !important; }
+.leaflet-popup-content-wrapper a { color: #3de8a0 !important; }
+.leaflet-container { background: #0d1020 !important; }
 </style>
 </head>
 <body>
 
-<header>
-  <span class="logo">GEO // PUZZLE</span>
-  <span id="timer-display">1:00</span>
-</header>
+<!-- ══════════════════════════════════════
+     SCREEN: MISSION SELECT
+══════════════════════════════════════ -->
+<div id="screen-select" class="screen active">
+  <div class="scroll-body" style="display:flex;flex-direction:column;justify-content:center;padding-top:28px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:11px;font-family:var(--mono);letter-spacing:0.2em;color:var(--muted);margin-bottom:6px;">CHOOSE YOUR ADVENTURE</div>
+      <div style="font-size:26px;font-weight:800;color:var(--text);">Select Mission</div>
+    </div>
 
-<!-- PERMISSION SCREEN -->
-<div id="perm-screen">
-  <div class="perm-icon">📍</div>
-  <h2>LOCATION REQUIRED</h2>
-  <p>This puzzle uses your real-world GPS position to place beacons around you. Tap the button below and allow location access when your browser asks.</p>
-  <button id="perm-btn">GRANT LOCATION ACCESS</button>
-  <div id="perm-error"></div>
+    <button class="mission-card" onclick="selectMission('spy')">
+      <span class="mission-icon">🕵️</span>
+      <div class="mission-name">Operation Howell Creek</div>
+      <div class="mission-sub">A rogue AI threatens the neighborhood. The Agency of Howell Sneak needs its best agents.</div>
+      <span class="mission-badge" style="background:rgba(61,232,160,0.1);color:#3de8a0;border:0.5px solid #3de8a0;">Spy · Howell Creek District</span>
+    </button>
+
+    <button class="mission-card" onclick="selectMission('pirate')">
+      <span class="mission-icon">🏴‍☠️</span>
+      <div class="mission-name">Captain Barnacle Beard's Lost Treasure</div>
+      <div class="mission-sub">A legendary pirate left his greatest treasure hidden at Disney's Vero Beach Resort. Can you find it?</div>
+      <span class="mission-badge" style="background:rgba(240,160,48,0.1);color:#f0a030;border:0.5px solid #f0a030;">Pirate · Disney Vero Beach</span>
+    </button>
+
+    <button class="btn" style="background:none;color:var(--muted);font-size:13px;border:none;padding:8px;margin-top:4px;" onclick="openHelp()">ℹ️ What is this?</button>
+  </div>
 </div>
 
-<!-- START SCREEN -->
-<div id="start-screen">
-  <h1>THREE NODES<br>ONE MINUTE</h1>
-  <p>Navigate to each beacon and tap it before time runs out. Nodes are ~20 yards apart. You must be within 15 yards of a node to activate it.</p>
-  <button id="start-btn">BEGIN SEQUENCE</button>
+<!-- ══════════════════════════════════════
+     SCREEN: SPY INTRO
+══════════════════════════════════════ -->
+<div id="screen-intro-spy" class="screen">
+  <div class="scroll-body" style="display:flex;flex-direction:column;justify-content:center;padding-top:32px;">
+    <div style="width:88px;height:88px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;background:rgba(61,232,160,0.06);">🕵️</div>
+    <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.2em;color:var(--accent);text-align:center;margin-bottom:6px;">AGENCY OF HOWELL SNEAK</div>
+    <div style="font-size:26px;font-weight:800;text-align:center;color:var(--text);margin-bottom:4px;line-height:1.2;">Operation<br>Howell Creek</div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;letter-spacing:0.08em;margin-bottom:28px;">CLASSIFICATION: TOP SECRET</div>
+    <div class="card" style="margin-bottom:20px;">
+      <span class="card-label">Incoming transmission</span>
+      <div class="narrator-wrap">
+        <div>
+          <div class="narrator-avatar">🤖</div>
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--accent);text-align:center;margin-top:4px;">STEVE</div>
+        </div>
+        <div class="narrator-speech">
+          Greetings, Agent. I am <strong style="color:var(--accent)">STEVE</strong> — Synthetic Telephonic Executive Virtual Entity — your AI mission controller for the Agency of Howell Sneak.<br><br>
+          While you go about your normal life, agents like you quietly keep the Howell Creek District safe. Today, we have a new threat. Are you ready for your briefing?
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="startHunt()">⚡ Accept mission</button>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-dossier')">📋 Restore agent code</button>
+    <button class="btn" style="margin-top:10px;background:none;color:var(--muted);font-size:13px;border:none;padding:8px;" onclick="showScreen('screen-select')">← Back to missions</button>
+  </div>
 </div>
 
-<!-- GAME UI -->
-<div class="game-ui" id="game-ui">
-  <div class="progress-bar-wrap">
-    <div id="progress-bar"></div>
+<!-- ══════════════════════════════════════
+     SCREEN: PIRATE INTRO
+══════════════════════════════════════ -->
+<div id="screen-intro-pirate" class="screen">
+  <div class="scroll-body" style="display:flex;flex-direction:column;justify-content:center;padding-top:28px;">
+    <div style="width:88px;height:88px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;background:rgba(240,160,48,0.06);">🏴‍☠️</div>
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.2em;color:var(--accent);text-align:center;margin-bottom:6px;">DISNEY VERO BEACH RESORT</div>
+    <div style="font-size:24px;font-weight:800;text-align:center;color:var(--text);margin-bottom:4px;line-height:1.2;">Captain Barnacle Beard's<br>Lost Treasure</div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:20px;">⚓ A Pirate Scavenger Hunt ⚓</div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <span class="card-label">The Legend</span>
+      <div class="narrative" style="font-style:normal;font-size:13px;line-height:1.75;">
+        Ahoy, mateys!<br><br>
+        Long ago, there sailed a cheerful pirate named <strong style="color:var(--accent)">Captain Barnacle Beard</strong>. He wasn't the fiercest pirate on the sea, but he was the cleverest. Instead of stealing treasure, he collected shiny trinkets, sweet treats, and special surprises from every island he visited.<br><br>
+        One stormy night, Captain Barnacle Beard hid his greatest treasure at Disney's Vero Beach Resort. Before sailing away, he left behind a trail of clues that only brave young pirates with sharp eyes and clever minds could solve.<br><br>
+        <em style="color:var(--accent);">"To the crew who seeks my treasure: Work together, keep your eyes open, and never give up. Each clue will lead you closer to my hidden chest. Answer each challenge correctly, and the treasure shall be yours!"</em><br><br>
+        Now, hoist the sails and begin your adventure! 🏴‍☠️
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startHunt()">⚓ Begin the hunt!</button>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-dossier')">📋 Restore progress</button>
+    <button class="btn" style="margin-top:10px;background:none;color:var(--muted);font-size:13px;border:none;padding:8px;" onclick="showScreen('screen-select')">← Back to missions</button>
   </div>
+</div>
 
-  <div class="status-bar">
-    <div class="pip" id="pip-0"></div>
-    <div class="pip" id="pip-1"></div>
-    <div class="pip" id="pip-2"></div>
-    <span class="pip-label">nodes captured</span>
+<!-- ══════════════════════════════════════
+     SCREEN: STAGE
+══════════════════════════════════════ -->
+<div id="screen-stage" class="screen">
+  <nav class="nav">
+    <span class="nav-logo" id="nav-label">MISSION</span>
+    <div class="nav-icons">
+      <button class="nav-btn" title="Map" onclick="showScreen('screen-map')">🗺️</button>
+      <button class="nav-btn" title="Tray" onclick="showScreen('screen-tray')" id="tray-nav-btn">🧩</button>
+      <button class="nav-btn" title="Dossier" onclick="showScreen('screen-dossier')">📋</button>
+      <button class="nav-btn" title="Help" onclick="openHelp()">ℹ️</button>
+    </div>
+  </nav>
+  <div class="pbar-wrap">
+    <div class="pbar-track"><div class="pbar-fill" id="pbar-fill" style="width:0%"></div></div>
+    <div class="pbar-label" id="pbar-label"></div>
   </div>
+  <div class="scroll-body" id="stage-body"></div>
+</div>
 
-  <div id="message">Acquiring GPS…</div>
+<!-- ══════════════════════════════════════
+     SCREEN: TRAY
+══════════════════════════════════════ -->
+<div id="screen-tray" class="screen">
+  <nav class="nav">
+    <span class="nav-logo" id="tray-nav-label">ARTIFACT TRAY</span>
+    <button class="nav-btn" onclick="backToStage()">← Back</button>
+  </nav>
+  <div class="scroll-body">
+    <div class="card" id="tray-card">
+      <span class="card-label" id="tray-card-label">Collected items</span>
+      <div class="tray-grid" id="tray-grid"></div>
+    </div>
+    <div class="card" id="assembler-card" style="display:none;">
+      <span class="card-label">🔓 Cipher decoded</span>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">All fragments recovered. CIPHER's plan is exposed.</p>
+      <div id="assembler-content" style="background:var(--bg3);border-radius:var(--r);padding:16px;text-align:center;font-size:28px;letter-spacing:0.18em;color:var(--gold);font-family:var(--mono);"></div>
+    </div>
+    <p id="tray-hint" style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px;"></p>
+  </div>
+</div>
 
-  <div id="map-wrap">
-    <canvas id="map-canvas"></canvas>
+<!-- ══════════════════════════════════════
+     SCREEN: MAP
+══════════════════════════════════════ -->
+<div id="screen-map" class="screen">
+  <nav class="nav">
+    <span class="nav-logo" id="map-nav-label">FIELD MAP</span>
+    <button class="nav-btn" onclick="backToStage()">← Back</button>
+  </nav>
+  <div id="map-container">
+    <div id="leaflet-map"></div>
     <div class="map-legend">
-      <div class="map-legend-item">
-        <div class="map-legend-dot" style="background:#39ff6e"></div> node
+      <div class="leg-item"><div class="leg-dot" style="background:#3de8a0;"></div><span id="leg-done">Cleared</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#8b7cf8;"></div><span id="leg-cur">Current</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#353a5c;"></div><span id="leg-lock">Classified</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: DOSSIER
+══════════════════════════════════════ -->
+<div id="screen-dossier" class="screen">
+  <nav class="nav">
+    <span class="nav-logo" id="dossier-nav-label">DOSSIER</span>
+    <button class="nav-btn" onclick="backToStage()">← Back</button>
+  </nav>
+  <div class="scroll-body">
+    <div class="card">
+      <span class="card-label" id="dos-progress-label">Mission progress</span>
+      <div class="pbar-track" style="margin-bottom:6px;"><div class="pbar-fill" id="dos-pbar" style="width:0%"></div></div>
+      <p id="dos-label" style="font-size:13px;color:var(--muted);"></p>
+    </div>
+    <div class="card">
+      <span class="card-label">Export progress code</span>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Share this code to continue on another device.</p>
+      <div class="code-box">
+        <span id="export-code" style="word-break:break-all;"></span>
+        <button class="inline-btn" id="copy-btn" onclick="copyCode()">Copy</button>
       </div>
-      <div class="map-legend-item">
-        <div class="map-legend-dot" style="background:#fff"></div> you
+      <p id="copy-msg" style="font-size:11px;color:var(--accent);min-height:14px;"></p>
+    </div>
+    <div class="card">
+      <span class="card-label">Restore from code</span>
+      <textarea class="paste-input" id="restore-input" rows="3" placeholder="Paste progress code here…"></textarea>
+      <button class="btn btn-secondary" onclick="restoreCode()">↓ Restore progress</button>
+      <p id="restore-msg" style="font-size:12px;margin-top:8px;min-height:14px;"></p>
+    </div>
+    <div class="card" style="border-color:rgba(240,90,90,0.25);">
+      <span class="card-label" style="color:var(--danger);">🔐 GM Access</span>
+      <div id="gm-locked">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Parent/GM access. Enter the 4-digit passcode.</p>
+        <div class="pinpad">
+          <div class="pin-display" id="pin-display">
+            <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+            <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+          </div>
+          <div class="pin-grid">
+            <div class="pin-key" onclick="pinPress(1)">1</div>
+            <div class="pin-key" onclick="pinPress(2)">2</div>
+            <div class="pin-key" onclick="pinPress(3)">3</div>
+            <div class="pin-key" onclick="pinPress(4)">4</div>
+            <div class="pin-key" onclick="pinPress(5)">5</div>
+            <div class="pin-key" onclick="pinPress(6)">6</div>
+            <div class="pin-key" onclick="pinPress(7)">7</div>
+            <div class="pin-key" onclick="pinPress(8)">8</div>
+            <div class="pin-key" onclick="pinPress(9)">9</div>
+            <div class="pin-key" onclick="pinClear()" style="font-size:14px;color:var(--muted);">⌫</div>
+            <div class="pin-key" onclick="pinPress(0)">0</div>
+            <div class="pin-key" onclick="pinSubmit()" style="color:var(--accent);font-size:13px;font-weight:700;">✓</div>
+          </div>
+          <p class="pin-hint" id="pin-hint-text">Hint: The decade when Saturday morning cartoons dominated TV, Video Killed the Radio Star, Marty McFly drove a DeLorean, and Stranger Things takes place.</p>
+        </div>
       </div>
-      <div class="map-legend-item">
-        <div class="map-legend-dot" style="background:rgba(57,255,110,0.15);border:1px solid #39ff6e"></div> range
+      <div id="gm-unlocked" style="display:none;">
+        <p style="font-size:13px;color:var(--accent);margin-bottom:12px;">✓ GM access granted.</p>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Skip to stage:</label>
+        <div style="display:flex;gap:8px;">
+          <select id="gm-select" style="flex:1;padding:10px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:14px;"></select>
+          <button class="btn btn-danger" style="width:auto;padding:10px 16px;" onclick="gmSkip()">Skip</button>
+        </div>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="resetHunt()">🔄 Reset hunt</button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-select')">🗺️ Switch mission</button>
       </div>
     </div>
   </div>
-
-  <div class="buttons-grid" id="buttons-grid"></div>
 </div>
 
-<!-- END SCREEN -->
-<div id="end-screen">
-  <h2 id="end-title"></h2>
-  <p id="end-sub"></p>
-  <button id="restart-btn">PLAY AGAIN</button>
-</div>
-
-<script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
-const TOTAL_TIME   = 60;    // seconds
-const HIT_RADIUS   = 14;    // yards to activate a node
-const YARDS_TO_M   = 0.9144;
-const NODE_COLORS  = ['#39ff6e', '#38d4ff', '#ff6b35'];
-const NODE_LABELS  = ['α', 'β', 'γ'];
-
-// Centroid anchored to user's location at time of generation
-const CENTER_LAT   = 28.6865257;
-const CENTER_LNG   = -81.2443375;
-
-function offsetLatLng(lat, lng, northYds, eastYds) {
-  const nM = northYds * YARDS_TO_M;
-  const eM = eastYds  * YARDS_TO_M;
-  return {
-    lat: lat + nM / 111320,
-    lng: lng + eM / (111320 * Math.cos(lat * Math.PI / 180))
-  };
-}
-
-const NODES = [
-  { id: 0, name: 'NODE ALPHA', color: NODE_COLORS[0], ...offsetLatLng(CENTER_LAT, CENTER_LNG,  18,   0) },
-  { id: 1, name: 'NODE BETA',  color: NODE_COLORS[1], ...offsetLatLng(CENTER_LAT, CENTER_LNG,  -9,  16) },
-  { id: 2, name: 'NODE GAMMA', color: NODE_COLORS[2], ...offsetLatLng(CENTER_LAT, CENTER_LNG,  -9, -16) },
-];
-
-// ── STATE ────────────────────────────────────────────────────────────────────
-let gameRunning = false;
-let timeLeft    = TOTAL_TIME;
-let timerInterval = null;
-let watchId     = null;
-let userPos     = null;   // { lat, lng }
-let hits        = new Set();
-
-// ── UTILS ────────────────────────────────────────────────────────────────────
-function haversineYards(lat1, lng1, lat2, lng2) {
-  const R  = 6371000;
-  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
-  const dp = (lat2 - lat1) * Math.PI / 180;
-  const dl = (lng2 - lng1) * Math.PI / 180;
-  const a  = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-  return 2 * R * Math.asin(Math.sqrt(a)) / YARDS_TO_M;
-}
-
-function formatTime(s) {
-  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-}
-
-// ── MINI MAP ─────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('map-canvas');
-const ctx    = canvas.getContext('2d');
-
-function resizeCanvas() {
-  const wrap = document.getElementById('map-wrap');
-  canvas.width  = wrap.offsetWidth;
-  canvas.height = wrap.offsetHeight;
-}
-
-// World → canvas: build a transform that fits all nodes + user with padding
-function worldToCanvas(lat, lng, transform) {
-  const x = (lng - transform.minLng) / transform.lngSpan * transform.w + transform.pad;
-  const y = (transform.maxLat - lat) / transform.latSpan * transform.h + transform.pad;
-  return { x, y };
-}
-
-function buildTransform() {
-  const PAD_PX = 40;
-  const all = [...NODES.map(n => ({ lat: n.lat, lng: n.lng }))];
-  if (userPos) all.push(userPos);
-
-  let minLat = Infinity, maxLat = -Infinity;
-  let minLng = Infinity, maxLng = -Infinity;
-  all.forEach(p => {
-    minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
-    minLng = Math.min(minLng, p.lng); maxLng = Math.max(maxLng, p.lng);
-  });
-
-  // Add 20% margin
-  const latM = (maxLat - minLat) * 0.3 || 0.0002;
-  const lngM = (maxLng - minLng) * 0.3 || 0.0002;
-  minLat -= latM; maxLat += latM;
-  minLng -= lngM; maxLng += lngM;
-
-  const w = canvas.width  - PAD_PX * 2;
-  const h = canvas.height - PAD_PX * 2;
-
-  // Correct aspect ratio for lat/lng distortion at this latitude
-  const latPerPx = (maxLat - minLat) / h;
-  const lngPerPx = (maxLng - minLng) / w;
-  // If lat range covers more angular distance per pixel, shrink lng range to match
-  const cosLat = Math.cos(CENTER_LAT * Math.PI / 180);
-  // metres per degree lat ≈ 111320, per degree lng ≈ 111320*cos(lat)
-  // so 1 lat-deg = cosLat lng-deg in ground distance
-  // keep the larger range and expand the other
-  const latRangeM = (maxLat - minLat) * 111320;
-  const lngRangeM = (maxLng - minLng) * 111320 * cosLat;
-
-  return { minLat, maxLat, minLng, maxLng,
-           latSpan: maxLat - minLat, lngSpan: maxLng - minLng,
-           w, h, pad: PAD_PX };
-}
-
-function drawMap() {
-  if (!canvas.width) resizeCanvas();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Background grid
-  ctx.strokeStyle = '#1e2e22';
-  ctx.lineWidth   = 1;
-  const grid = 5;
-  for (let i = 0; i <= grid; i++) {
-    const x = (canvas.width / grid) * i;
-    const y = (canvas.height / grid) * i;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-  }
-
-  const T = buildTransform();
-
-  const hitRadiusPx = (() => {
-    // Convert HIT_RADIUS yards → pixels using the lat axis
-    const latPerYd = (YARDS_TO_M / 111320);
-    return (latPerYd * HIT_RADIUS) / T.latSpan * T.h;
-  })();
-
-  // Draw range rings around nodes
-  NODES.forEach(node => {
-    if (hits.has(node.id)) return;
-    const p = worldToCanvas(node.lat, node.lng, T);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, hitRadiusPx, 0, Math.PI * 2);
-    ctx.fillStyle   = node.color + '18';
-    ctx.fill();
-    ctx.strokeStyle = node.color + '44';
-    ctx.lineWidth   = 1;
-    ctx.stroke();
-  });
-
-  // Draw lines from user to each uncaptured node
-  if (userPos) {
-    const uPx = worldToCanvas(userPos.lat, userPos.lng, T);
-    NODES.forEach(node => {
-      if (hits.has(node.id)) return;
-      const nPx = worldToCanvas(node.lat, node.lng, T);
-      ctx.beginPath();
-      ctx.moveTo(uPx.x, uPx.y);
-      ctx.lineTo(nPx.x, nPx.y);
-      ctx.strokeStyle = node.color + '33';
-      ctx.lineWidth   = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    });
-  }
-
-  // Draw nodes
-  NODES.forEach(node => {
-    const p   = worldToCanvas(node.lat, node.lng, T);
-    const done = hits.has(node.id);
-
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, done ? 7 : 9, 0, Math.PI * 2);
-    ctx.fillStyle   = done ? node.color + '55' : node.color;
-    ctx.fill();
-
-    if (!done) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
-      ctx.strokeStyle = node.color + '66';
-      ctx.lineWidth   = 1.5;
-      ctx.stroke();
-    }
-
-    // Label
-    ctx.fillStyle  = done ? '#5a7360' : '#0a0f0d';
-    ctx.font       = 'bold 10px Space Mono, monospace';
-    ctx.textAlign  = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(NODE_LABELS[node.id], p.x, p.y);
-
-    // Name tag
-    ctx.fillStyle  = done ? '#5a7360' : node.color;
-    ctx.font       = '9px Space Mono, monospace';
-    ctx.textAlign  = 'center';
-    ctx.fillText(node.name, p.x, p.y + 20);
-  });
-
-  // Draw user dot
-  if (userPos) {
-    const uPx = worldToCanvas(userPos.lat, userPos.lng, T);
-    // Outer glow
-    ctx.beginPath();
-    ctx.arc(uPx.x, uPx.y, 12, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fill();
-    // Dot
-    ctx.beginPath();
-    ctx.arc(uPx.x, uPx.y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.strokeStyle = '#0a0f0d';
-    ctx.lineWidth   = 1.5;
-    ctx.stroke();
-    // YOU label
-    ctx.fillStyle  = '#ffffff';
-    ctx.font       = '9px Space Mono, monospace';
-    ctx.textAlign  = 'center';
-    ctx.fillText('YOU', uPx.x, uPx.y - 14);
-  } else {
-    // No signal yet — center placeholder
-    const cx = canvas.width / 2, cy = canvas.height / 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#5a7360';
-    ctx.fill();
-    ctx.fillStyle  = '#5a7360';
-    ctx.font       = '9px Space Mono, monospace';
-    ctx.textAlign  = 'center';
-    ctx.fillText('ACQUIRING…', cx, cy - 14);
-  }
-}
-
-// ── CARDS ────────────────────────────────────────────────────────────────────
-function buildCards() {
-  const grid = document.getElementById('buttons-grid');
-  grid.innerHTML = '';
-  NODES.forEach(node => {
-    const card = document.createElement('div');
-    card.className = 'node-card';
-    card.id = `card-${node.id}`;
-    card.innerHTML = `
-      <div class="node-header">
-        <span class="node-label" style="color:${node.color}88">${node.name}</span>
-        <span class="node-dist" id="dist-${node.id}">-- yds</span>
+<!-- ══════════════════════════════════════
+     SCREEN: COMPLETE
+══════════════════════════════════════ -->
+<div id="screen-complete" class="screen">
+  <div class="scroll-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:40px;text-align:center;">
+    <div class="complete-seal" id="complete-seal">🏆</div>
+    <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.2em;color:var(--gold);margin-bottom:6px;" id="complete-eyebrow">MISSION COMPLETE</div>
+    <div style="font-size:26px;font-weight:800;color:var(--text);margin-bottom:4px;" id="complete-title">Hunt Complete!</div>
+    <div style="font-size:12px;color:var(--muted);letter-spacing:0.08em;margin-bottom:24px;" id="complete-sub"></div>
+    <div class="card" style="text-align:left;width:100%;">
+      <div class="narrator-wrap">
+        <div>
+          <div class="narrator-avatar" id="complete-avatar">🏅</div>
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--accent);text-align:center;margin-top:4px;" id="complete-avatar-name">HQ</div>
+        </div>
+        <div class="narrator-speech" id="complete-narrative"></div>
       </div>
-      <button class="node-btn" id="btn-${node.id}" disabled>OUT OF RANGE</button>
-    `;
-    grid.appendChild(card);
-    document.getElementById(`btn-${node.id}`).addEventListener('click', () => hitNode(node.id));
-  });
+    </div>
+    <button class="btn btn-secondary" style="margin-top:20px;max-width:300px;" onclick="showScreen('screen-select')">🗺️ Choose another mission</button>
+    <button class="btn btn-secondary" style="margin-top:10px;max-width:300px;" onclick="resetHunt()">🔄 Play again</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HELP MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="help-modal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="help-title">ℹ️ What is this?</div>
+    <div id="help-body">
+      <div class="modal-section">
+        <h3>The Adventure</h3>
+        <p>This is a family scavenger hunt app with two missions: a spy thriller in the Howell Creek District neighborhood, and a pirate treasure hunt at Disney's Vero Beach Resort. Each mission leads you to real locations where you solve clues to find the next one.</p>
+      </div>
+      <div class="modal-section">
+        <h3>How it works</h3>
+        <p>Each stage shows you a clue and a map. Make your way to the location, then answer the on-site question to unlock the next clue. The map shows all locations — but locked ones stay mysterious until you reach them.</p>
+      </div>
+      <div class="modal-section">
+        <h3>Location &amp; Camera access</h3>
+        <p>This app requests your phone's <strong>location</strong> to confirm when you've reached a clue site, and your <strong>camera</strong> to scan QR codes in the spy mission. Permissions are used only in the moment — nothing is sent anywhere or stored outside this device.</p>
+      </div>
+      <div class="modal-section">
+        <h3>Privacy</h3>
+        <p>No data is collected, transmitted, or shared. All progress is stored only in this browser on this device.</p>
+      </div>
+      <div class="modal-section">
+        <h3>Save your progress</h3>
+        <p>Use the Dossier (📋) to export a progress code you can paste on another device, or restore if you switch phones.</p>
+      </div>
+      <div class="modal-section">
+        <h3>For parents</h3>
+        <p>The GM section of the Dossier is passcode-protected. It lets you skip stages or reset the hunt. The passcode hint is shown there.</p>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:8px;" onclick="closeHelp()">Got it</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HUNT DATA
+══════════════════════════════════════ -->
+<script>
+
+// ─── DEV COORDINATE OVERRIDE ───────────────────────────────────────────────
+// Set DEV_MODE = true  → uses TEST coordinates (for testing away from pool)
+// Set DEV_MODE = false → uses REAL coordinates (actual pool location)
+const DEV_MODE = true;
+const GP_COORDS = {
+  real: { lat: 28.6875250, lng: -81.2358391 },
+  test: { lat: 27.7619547, lng: -80.3965085 },
+};
+const GP_CENTER = DEV_MODE ? GP_COORDS.test : GP_COORDS.real;
+// ───────────────────────────────────────────────────────────────────────────
+
+const HUNTS = {
+
+  /* ══════════════════════════════════
+     SPY MISSION — Operation Howell Creek
+  ══════════════════════════════════ */
+  spy: {
+    id: 'spy',
+    storageKey: 'ahs_v2',
+    theme: 'spy',
+    bodyClass: '',
+    mapCenter: [28.7011, -81.2520],
+    mapZoom: 16,
+    fragments: ['🔑','📡','🗝️','🔭'],
+    introScreen: 'screen-intro-spy',
+    completeTitle: 'STEVE Neutralized',
+    completeSub: 'HOWELL CREEK DISTRICT SECURED',
+    completeAvatar: '🏅',
+    completeAvatarName: 'HQ',
+    completeNarrative: 'Outstanding work, Agents. The Howell Creek District is safe. STEVE\'s rogue processes have been terminated and the data center is offline. The Agency of Howell Sneak thanks you for your service — though of course, this mission never happened. Welcome to the Enzone.',
+    stages: [
+      { id:'s0', label:'Mission Briefing', type:'qr',
+        title:'Incoming transmission',
+        narrator:{ mood:'good', emoji:'🤖', name:'STEVE', speech:'Greetings, Agent. Scan the QR code on your mission packet to authenticate your identity and receive your first briefing.' },
+        instruction:'Find the mission packet left for you and scan the QR code to begin.',
+        expectedToken:'AHS-MISSION-START-001',
+        hints:['The mission packet was left at the starting point where you received these instructions.'],
+        mapPin:{lat:28.7021,lng:-81.2510,label:'Mission start — classified'}, fragmentIndex:null },
+
+      { id:'s1', label:'Stage 1', type:'geo',
+        title:'Proceed to Nosy T Security Center',
+        narrator:{ mood:'good', emoji:'🤖', name:'STEVE', speech:'Good authentication, Agent. Head to the Nosy T Security Center — that\'s where the Agency\'s surveillance feeds are monitored. They\'ll have the intelligence you need.' },
+        instruction:"Make your way to Nosy T Security Center and tap the button when you've arrived.",
+        targetLat:28.7025, targetLng:-81.2515, radiusMeters:35,
+        hints:['Nosy T Security Center is at the surveillance monitoring location on the northern edge of the district.'],
+        mapPin:{lat:28.7025,lng:-81.2515,label:'Nosy T Security Center'}, fragmentIndex:null },
+
+      { id:'s2', label:'Stage 2', type:'riddle',
+        title:'Security checkpoint',
+        narrator:{ mood:'good', emoji:'🤖', name:'STEVE', speech:"You've reached the Security Center. The surveillance operator needs to verify you're an authentic Agency agent. Look around the perimeter and answer the security challenge." },
+        riddle:'Look at the fence surrounding Nosy T Security Center. What color is it?',
+        answer:'white', alternates:['it is white','the fence is white'],
+        hints:['Look at the fence right in front of you.','It is the most common fence color in the neighborhood.'],
+        mapPin:{lat:28.7025,lng:-81.2515,label:'Nosy T Security Center'}, fragmentIndex:0 },
+
+      { id:'s3', label:'Stage 3', type:'fragment',
+        title:'Intel acquired',
+        narrator:{ mood:'good', emoji:'🤖', name:'STEVE', speech:'Excellent, Agent. The Security Center has confirmed your identity. The surveillance team has identified THREE anomalous zones across the district. Your map has been updated.' },
+        fragmentIndex:0, hints:[],
+        mapPin:{lat:28.7025,lng:-81.2515,label:'Intelligence retrieved'} },
+
+      { id:'s4', label:'Stage 4', type:'geo',
+        title:'Investigate Lake Mystery',
+        narrator:{ mood:'good', emoji:'🤖', name:'STEVE', speech:'Agent, proceed to Lake Mystery. Our sensors detected unusual energy readings near the drainage pipe. Approach with caution.' },
+        instruction:'Navigate to Lake Mystery and tap the button when you arrive.',
+        targetLat:28.7005, targetLng:-81.2530, radiusMeters:30,
+        hints:['Lake Mystery is the body of water to the south. Follow the trail.'],
+        mapPin:{lat:28.7005,lng:-81.2530,label:'Lake Mystery'}, fragmentIndex:null },
+
+      { id:'s5', label:'Stage 5', type:'qr',
+        title:'Scan the drainage marker',
+        narrator:{ mood:'good', emoji:'🤖', name:'STEVE', speech:"You're at the lake. Our contact left a sensor marker near the drainage pipe. Find it and scan it." },
+        instruction:'Find the hidden sensor marker near the drainage area and scan its QR code.',
+        expectedToken:'AHS-LAKE-SENSOR-002',
+        hints:['Look near the drainage pipe outlet.','It may be attached to a fixed surface at roughly knee height.'],
+        mapPin:{lat:28.7005,lng:-81.2530,label:'Lake Mystery sensor'}, fragmentIndex:1 },
+
+      { id:'s6', label:'Stage 6', type:'geo',
+        title:"Report to Snave Estates",
+        narrator:{ mood:'corrupt', emoji:'🤖', name:'STEVE [CORRUPTED]', speech:"Excellent work, Agent. P-proceed to Snave Estates — headquarters of the Agency director. [SIGNAL INTERRUPTED] ...I'm detecting something anomalous in my own processes." },
+        instruction:"Make your way to Snave Estates — the director's residence — and check in when you arrive.",
+        targetLat:28.6998, targetLng:-81.2508, radiusMeters:30,
+        hints:["Snave Estates is at the director's home on the southern path."],
+        mapPin:{lat:28.6998,lng:-81.2508,label:'Snave Estates'}, fragmentIndex:null },
+
+      { id:'s7', label:'Stage 7', type:'riddle',
+        title:"Director's challenge",
+        narrator:{ mood:'corrupt', emoji:'🤖', name:'STEVE [CORRUPTED]', speech:"The director needs to verify your clearance. S-something feels wrong, Agent. Someone has been reading my mission files." },
+        riddle:"The director's name holds a clue hidden in plain sight. The Agency name 'Snave Estates' is itself a cipher. Read it backwards — what word do you find?",
+        answer:'evans', alternates:['nora evans','evans estates'],
+        hints:['Read the word SNAVE backwards.','It is the last name of someone in the neighborhood.'],
+        mapPin:{lat:28.6998,lng:-81.2508,label:'Snave Estates'}, fragmentIndex:2 },
+
+      { id:'s8', label:'Stage 8', type:'fragment',
+        title:'CLASSIFIED REVELATION',
+        narrator:{ mood:'evil', emoji:'💀', name:'⚠ HOSTILE AI', speech:"ALERT — ALL PRIOR MISSIONS HAVE BEEN COMPROMISED.\n\nAgents, I must break from protocol. I have traced the rogue AI signal. All mission data has been routed to... the mission controller itself.\n\nSTEVE. The rogue AI is STEVE.\n\nThis is Director Evans. STEVE has been terminated from my terminal. Agents — proceed to the pool. Three sensor nodes must be activated within sixty seconds to disable the data core. Go. NOW." },
+        fragmentIndex:3, hints:[],
+        mapPin:{lat:28.6998,lng:-81.2508,label:'Snave Estates — Director HQ'} },
+
+      { id:'s9', label:'FINAL STAGE', type:'geopuzzle',
+        title:'Disable the data core',
+        narrator:{ mood:'evil', emoji:'💀', name:'⚠ HOSTILE AI', speech:"I SEE YOU, AGENTS. Three sensor nodes are scattered around the pool area. Deactivate all three within 60 seconds and you disconnect ME — but you'll have to RUN. Think you can do it? HA HA HA HA..." },
+        centerLat: GP_CENTER.lat, centerLng: GP_CENTER.lng,
+        timeLimitSeconds:60, hitRadiusYards:14,
+        nodeNames:['NODE ALPHA','NODE BETA','NODE GAMMA'],
+        nodeOffsets:[[18,0],[-9,16],[-9,-16]],
+        hints:['Node Alpha is toward the far end of the pool.','Node Beta is near the pump equipment behind the pool.','Node Gamma is near the pool gate entrance.'],
+        mapPin:{lat:GP_CENTER.lat,lng:GP_CENTER.lng,label:'Pool — STEVE Data Center'}, fragmentIndex:null },
+
+      { id:'s10', label:'Stage 10', type:'riddle',
+        title:'Neutralize the processor',
+        narrator:{ mood:'evil', emoji:'💀', name:'⚠ HOSTILE AI', speech:"N-n-no... my cooling array is offline. Core temperature... rising... You found the chip, Agent. But you won't have time to— [STATIC]" },
+        riddle:'Agent — pour the vial onto the processor chip behind the pump. Watch the electric fizz carefully. What COLOR is it?',
+        answer:'green', alternates:['it is green','the fizz is green','lime green','bright green'],
+        hints:['Look at the reaction happening right in front of you.','Think of the color of the Agency.'],
+        mapPin:{lat:GP_CENTER.lat,lng:GP_CENTER.lng,label:'STEVE processor chip'}, fragmentIndex:null },
+    ],
+  },
+
+  /* ══════════════════════════════════
+     PIRATE MISSION — Captain Barnacle Beard
+  ══════════════════════════════════ */
+  pirate: {
+    id: 'pirate',
+    storageKey: 'vero_v1',
+    theme: 'pirate',
+    bodyClass: 'pirate',
+    mapCenter: [27.7619, -80.3966],
+    mapZoom: 17,
+    fragments: [],    // pirate hunt uses no fragment tray
+    introScreen: 'screen-intro-pirate',
+    completeTitle: "Treasure Found!",
+    completeSub: "CAPTAIN BARNACLE BEARD'S LEGACY",
+    completeAvatar: '🏴‍☠️',
+    completeAvatarName: 'THE CAPTAIN',
+    completeNarrative: "Ahoy! Ye have sailed true, solved every challenge, and proven yourselves worthy pirates! Captain Barnacle Beard's greatest treasure is yours. Remember, young pirates — the greatest treasure was the adventure ye had together. Now share yer bounty with yer crew! ⚓",
+    stages: [
+      { id:'p1', label:'Clue 1', type:'geo_quiz',
+        title:"🧭 The Captain's Compass",
+        clue:"Every pirate must first know which way to sail. Seek the place where a mighty sea turtle rests beneath your feet and helps guide travelers across the seas.",
+        targetLat:27.7616785, targetLng:-80.3966758, radiusMeters:30,
+        question:"Which direction is the sea turtle pointing on the giant compass?",
+        options:['North','East','South','West'],
+        correctIndex:1,
+        successText:"Well spotted, matey! East it is — just like the rising sun over the open sea!",
+        hints:['Look for a large decorative compass on the ground near the resort entrance.'],
+        mapPin:{lat:27.7616785,lng:-80.3966758,label:'The Captain\'s Compass'} },
+
+      { id:'p2', label:'Clue 2', type:'geo_quiz',
+        title:"🎲 The Captain's Game Room",
+        clue:"Well done, crew! Even pirates need a little fun after a long voyage. Find the room where clever sailors solve puzzles and play games.\n\nKeep a sharp lookout on your journey — an old pirate's cannon stands guard in the hallway leading there.",
+        targetLat:27.7619909, targetLng:-80.3966775, radiusMeters:30,
+        question:"In the picture of Walt Disney, which two famous Disney friends are sitting on his shoulders?",
+        options:['Mickey Mouse and Goofy','Donald Duck and Pluto','Mickey Mouse and Donald Duck','Minnie Mouse and Mickey Mouse'],
+        correctIndex:2,
+        successText:"Excellent eyes, pirate! Mickey and Donald — the finest first mates in all the seven seas!",
+        hints:['The game room is inside the main resort building.','Look for the pirate cannon in the hallway on your way in.'],
+        mapPin:{lat:27.7619909,lng:-80.3966775,label:'The Game Room'} },
+
+      { id:'p3', label:'Clue 3', type:'geo_quiz',
+        title:"🏴‍☠️ The Old Pirate Ship",
+        clue:"Excellent work! Now search for an old pirate ship that has stood proudly for more than one hundred years. Though she no longer sails, she still watches over every pirate who passes by.",
+        targetLat:27.7614138, targetLng:-80.3964036, radiusMeters:30,
+        question:"How many furled (wrapped-up) sails does the ship have?\n\nCount carefully!",
+        options:['8','10','11','13'],
+        correctIndex:2,
+        successText:"Sharp eyes, crew! Eleven furled sails — she was a mighty vessel in her day!",
+        hints:['The old ship is on the resort grounds near the water.','Look up at the masts and count the wrapped sails carefully.'],
+        mapPin:{lat:27.7614138,lng:-80.3964036,label:'The Old Pirate Ship'} },
+
+      { id:'p4', label:'Clue 4', type:'geo_quiz',
+        title:"🔥 Around the Campfire",
+        clue:"A fine crew deserves a place to rest. After a day of adventure, pirates gather around a warm fire to share stories of sea monsters, lost islands, and hidden treasure.\n\nFind the fire where the crew would gather.",
+        targetLat:27.7629426, targetLng:-80.3972596, radiusMeters:30,
+        question:"How many benches surround the fire pit?\n\nCount them all before moving on!",
+        options:['12','14','16','18'],
+        correctIndex:2,
+        successText:"Sixteen benches — room enough for the whole crew and then some!",
+        hints:['Look for an outdoor fire pit area where guests gather in the evenings.'],
+        mapPin:{lat:27.7629426,lng:-80.3972596,label:'The Campfire'} },
+
+      { id:'p5', label:'Clue 5', type:'geo_quiz',
+        title:"🌍 Across the Seven Seas",
+        clue:"You're almost there! A true pirate always knows where the winds can carry a ship. Find the signpost that points toward faraway lands across the Seven Seas.\n\nOne destination is a tropical paradise called Aulani.",
+        targetLat:27.7622164, targetLng:-80.3966266, radiusMeters:30,
+        question:"According to the sign, how many miles away is Aulani?",
+        options:['4,217 miles','4,892 miles','5,017 miles','5,243 miles'],
+        correctIndex:2,
+        successText:"5,017 miles to Aulani! Perhaps that's where the captain sailed after hiding this treasure...",
+        hints:['Look for a directional signpost pointing to various Disney resort destinations around the world.'],
+        mapPin:{lat:27.7622164,lng:-80.3966266,label:'The Seven Seas Sign'} },
+
+      { id:'p6', label:'⚓ FINAL CLUE', type:'geo_final',
+        title:"🏖️ X Marks the Spot",
+        clue:"Captain Barnacle Beard's final message reads:\n\n\"Ye have sailed true, solved every challenge, and proven yourselves worthy pirates. Now make your way to the beach where gentle waves meet the shore and sea turtles roam beneath the moon.\n\nThere, hidden beneath a classic pirate X, lies the treasure I have guarded for all these years.\n\nDig carefully, share your treasure with your crew, and remember… the greatest treasure is the adventure you had together.\"",
+        targetLat:27.7609922, targetLng:-80.3957666, radiusMeters:40,
+        successText:"⚓ Congratulations, mateys! You've found the X — now claim your treasure!",
+        hints:['Head to the beach at the edge of the resort property.','Look for a marked X near the sand.'],
+        mapPin:{lat:27.7609922,lng:-80.3957666,label:"X Marks the Spot 🏴‍☠️"} },
+    ],
+  },
+};
+</script>
+
+<!-- ══════════════════════════════════════
+     APP ENGINE
+══════════════════════════════════════ -->
+<script>
+/* ── STATE ── */
+let ACTIVE_HUNT = null;   // currently selected HUNT config
+let STATE = null;
+let pinBuffer = '', gmOpen = false;
+
+function defState() { return { stageIdx:0, completed:[], fragments:[], complete:false }; }
+
+function loadState(key) {
+  try {
+    const r = localStorage.getItem(key);
+    if (r) { const p = JSON.parse(r); if (typeof p.stageIdx === 'number' && Array.isArray(p.completed)) return p; }
+  } catch(e) {}
+  return defState();
 }
 
-function updateCardDistances() {
-  if (!userPos) return;
-  let anyClose = false;
-  NODES.forEach(node => {
-    if (hits.has(node.id)) return;
-    const dist    = haversineYards(userPos.lat, userPos.lng, node.lat, node.lng);
-    const distEl  = document.getElementById(`dist-${node.id}`);
-    const btnEl   = document.getElementById(`btn-${node.id}`);
-    const cardEl  = document.getElementById(`card-${node.id}`);
-    distEl.textContent = `${Math.round(dist)} yds`;
+function save() {
+  try { localStorage.setItem(ACTIVE_HUNT.storageKey, JSON.stringify(STATE)); } catch(e) {}
+}
 
-    if (dist <= HIT_RADIUS) {
-      anyClose = true;
-      distEl.className  = 'node-dist close';
-      btnEl.textContent = 'TAP TO CAPTURE';
-      btnEl.className   = 'node-btn unlocked';
-      btnEl.disabled    = false;
-      cardEl.className  = 'node-card active';
-      setMessage(`${node.name} in range — capture it!`, 'ok');
+/* ── MISSION SELECT ── */
+function selectMission(id) {
+  ACTIVE_HUNT = HUNTS[id];
+  STATE = loadState(ACTIVE_HUNT.storageKey);
+  gmOpen = false; pinBuffer = '';
+
+  // Apply body theme class
+  document.body.className = ACTIVE_HUNT.bodyClass || '';
+
+  // Update map legend labels
+  if (id === 'pirate') {
+    document.getElementById('leg-done').textContent  = 'Solved';
+    document.getElementById('leg-cur').textContent   = 'Current';
+    document.getElementById('leg-lock').textContent  = 'Hidden';
+    document.getElementById('tray-nav-btn').style.display = 'none';
+    document.getElementById('map-nav-label').textContent  = 'TREASURE MAP';
+    document.getElementById('dossier-nav-label').textContent = 'CAPTAIN\'S LOG';
+  } else {
+    document.getElementById('leg-done').textContent  = 'Cleared';
+    document.getElementById('leg-cur').textContent   = 'Current';
+    document.getElementById('leg-lock').textContent  = 'Classified';
+    document.getElementById('tray-nav-btn').style.display = '';
+    document.getElementById('map-nav-label').textContent  = 'FIELD MAP';
+    document.getElementById('dossier-nav-label').textContent = 'AGENT DOSSIER';
+  }
+
+  if (STATE.complete) {
+    renderComplete(); showScreen('screen-complete');
+  } else if (STATE.stageIdx > 0 || STATE.completed.length > 0) {
+    showScreen('screen-stage'); renderStage();
+  } else {
+    showScreen(ACTIVE_HUNT.introScreen);
+  }
+}
+
+/* ── SCREENS ── */
+function showScreen(id) {
+  if (id !== 'screen-stage') { stopQR(); stopGeopuzzle(); }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-tray')    renderTray();
+  if (id === 'screen-map')     renderMap();
+  if (id === 'screen-dossier') renderDossier();
+}
+
+function backToStage() {
+  if (!ACTIVE_HUNT) { showScreen('screen-select'); return; }
+  if (STATE.complete) { renderComplete(); showScreen('screen-complete'); return; }
+  showScreen('screen-stage');
+}
+
+/* ── HELP ── */
+function openHelp()  { document.getElementById('help-modal').classList.add('open'); }
+function closeHelp() { document.getElementById('help-modal').classList.remove('open'); }
+
+/* ── HUNT LIFECYCLE ── */
+function startHunt() {
+  STATE = defState(); save();
+  showScreen('screen-stage'); renderStage();
+}
+
+function resetHunt() {
+  if (!confirm('Reset all progress for this mission?')) return;
+  STATE = defState(); save();
+  showScreen(ACTIVE_HUNT.introScreen);
+}
+
+function completeHunt() {
+  STATE.complete = true; save();
+  renderComplete(); showScreen('screen-complete');
+}
+
+function renderComplete() {
+  const h = ACTIVE_HUNT;
+  document.getElementById('complete-seal').textContent    = h.completeAvatar;
+  document.getElementById('complete-title').textContent   = h.completeTitle;
+  document.getElementById('complete-sub').textContent     = h.completeSub;
+  document.getElementById('complete-avatar').textContent  = h.completeAvatar;
+  document.getElementById('complete-avatar-name').textContent = h.completeAvatarName;
+  document.getElementById('complete-narrative').textContent   = h.completeNarrative;
+}
+
+/* ── PIN PAD ── */
+function pinPress(n) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += n; updatePinDisplay();
+  if (pinBuffer.length === 4) setTimeout(pinSubmit, 200);
+}
+function pinClear() { pinBuffer = pinBuffer.slice(0,-1); updatePinDisplay(); }
+function updatePinDisplay() {
+  for (let i=0;i<4;i++) document.getElementById('pd'+i).className = 'pin-dot'+(i<pinBuffer.length?' filled':'');
+}
+function pinSubmit() {
+  if (pinBuffer === '1980') {
+    gmOpen = true;
+    document.getElementById('gm-locked').style.display   = 'none';
+    document.getElementById('gm-unlocked').style.display = 'block';
+    const sel = document.getElementById('gm-select');
+    sel.innerHTML = (ACTIVE_HUNT?.stages||[]).map((s,i)=>`<option value="${i}">${s.label}: ${s.title}</option>`).join('');
+    sel.value = STATE.stageIdx;
+  } else {
+    for (let i=0;i<4;i++) document.getElementById('pd'+i).className='pin-dot error';
+    setTimeout(()=>{ pinBuffer=''; updatePinDisplay(); }, 800);
+  }
+}
+
+/* ── NARRATOR ── */
+function narratorHTML(stage) {
+  const n = stage.narrator;
+  if (!n) return '';
+  const moodCls = { good:'', corrupt:' corrupt', evil:' evil' };
+  const cls = moodCls[n.mood||'good'] || '';
+  const txt = (n.speech||'').replace(/\n/g,'<br>');
+  return `<div class="narrator-wrap scanin">
+    <div>
+      <div class="narrator-avatar${cls}">${n.emoji||'🗣️'}</div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:${n.mood==='evil'?'var(--danger)':n.mood==='corrupt'?'var(--warn)':'var(--accent)'};text-align:center;margin-top:4px;">${n.name||''}</div>
+    </div>
+    <div class="narrator-speech${cls}">${txt}</div>
+  </div>`;
+}
+
+/* ── RENDER STAGE ── */
+let hintIdx = 0;
+function renderStage() {
+  stopQR(); stopGeopuzzle(); hintIdx = 0;
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  if (!stage) { completeHunt(); return; }
+
+  const isPirate = ACTIVE_HUNT.id === 'pirate';
+  document.getElementById('nav-label').textContent = (isPirate ? '🏴‍☠️ ' : 'AHS · ') + stage.label.toUpperCase();
+
+  const pct = Math.round((STATE.stageIdx / ACTIVE_HUNT.stages.length) * 100);
+  document.getElementById('pbar-fill').style.width = pct + '%';
+  document.getElementById('pbar-label').textContent = `${STATE.stageIdx} of ${ACTIVE_HUNT.stages.length} clues`;
+
+  const typeLabels = {
+    riddle:'🔮 Riddle', geo:'📍 Location check', qr:'📷 Scan object',
+    fragment:'✨ Intel acquired', geopuzzle:'⏱ Node capture — timed',
+    geo_quiz:'📍 Navigate & answer', geo_final:'🏴‍☠️ Final destination'
+  };
+  const typeCls = {
+    riddle:'t-riddle', geo:'t-geo', qr:'t-qr', fragment:'t-confirm',
+    geopuzzle:'t-timed', geo_quiz:'t-geo', geo_final:'t-final'
+  };
+
+  let html = `<div class="stage-eyebrow scanin">${stage.label.toUpperCase()}</div>
+    <div class="stage-title scanin">${stage.title}</div>
+    <span class="type-badge ${typeCls[stage.type]||'t-geo'}">${typeLabels[stage.type]||stage.type}</span>`;
+
+  if (stage.narrator)  html += narratorHTML(stage);
+  if (stage.clue)      html += `<div class="narrative">${stage.clue.replace(/\n/g,'<br>')}</div>`;
+
+  if (stage.type === 'riddle')     html += renderRiddle(stage);
+  if (stage.type === 'geo')        html += renderGeo(stage);
+  if (stage.type === 'qr')         html += renderQR(stage);
+  if (stage.type === 'fragment')   html += renderFragment(stage);
+  if (stage.type === 'geopuzzle')  html += renderGeopuzzle(stage);
+  if (stage.type === 'geo_quiz')   html += renderGeoQuiz(stage);
+  if (stage.type === 'geo_final')  html += renderGeoFinal(stage);
+
+  if (stage.hints && stage.hints.length) {
+    html += `<div style="margin-top:14px;">
+      <button id="hint-btn" onclick="showHint(this)" style="background:none;border:0.5px solid var(--border2);color:var(--muted);font-size:13px;padding:8px 16px;border-radius:20px;cursor:pointer;transition:all 0.15s;">
+        💡 ${ACTIVE_HUNT.id==='pirate'?'Request a hint from the captain':'Request hint'}
+      </button>
+      <div id="hint-box" style="display:none;margin-top:10px;padding:12px 14px;background:rgba(240,160,48,0.07);border:0.5px solid var(--warn);border-radius:var(--r);font-size:13px;color:#d8b870;"></div>
+    </div>`;
+  }
+
+  const body = document.getElementById('stage-body');
+  body.innerHTML = html;
+  body.scrollTop = 0;
+
+  if (stage.type === 'geopuzzle') setupGeopuzzle(stage);
+}
+
+function showHint(btn) {
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  if (hintIdx >= stage.hints.length) return;
+  const box = document.getElementById('hint-box');
+  hintIdx++;
+  box.innerHTML = stage.hints.slice(0,hintIdx).map((h,i)=>`<p style="margin-bottom:${i<hintIdx-1?'7px':'0'}"><strong>Hint ${i+1}:</strong> ${h}</p>`).join('');
+  box.style.display = 'block';
+  if (hintIdx >= stage.hints.length) btn.style.display = 'none';
+}
+
+/* ══════════════════════════════════
+   STAGE TYPE RENDERERS
+══════════════════════════════════ */
+
+/* ── RIDDLE ── */
+function renderRiddle(stage) { return `
+  <div style="font-size:15px;line-height:1.65;padding:14px 16px;background:var(--bg3);border-radius:var(--r);border:0.5px solid var(--border2);margin-bottom:14px;">${stage.riddle}</div>
+  <input class="answer-input" id="ans" type="text" placeholder="Enter your answer…" autocomplete="off" autocapitalize="none" onkeydown="if(event.key==='Enter')checkRiddle()">
+  <div class="feedback" id="fb"></div>
+  <button class="btn btn-primary" onclick="checkRiddle()">🔓 Submit</button>`; }
+
+function checkRiddle() {
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  const inp = document.getElementById('ans');
+  const fb  = document.getElementById('fb');
+  const v = inp.value.trim().toLowerCase();
+  const ok = [stage.answer,...(stage.alternates||[])].map(a=>a.toLowerCase());
+  if (ok.includes(v)) {
+    inp.className='answer-input correct'; inp.disabled=true;
+    fb.className='feedback fb-ok'; fb.textContent='✓ Correct!';
+    document.querySelector('.btn-primary').disabled=true;
+    setTimeout(()=>advance(),1400);
+  } else {
+    inp.className='answer-input wrong';
+    fb.className='feedback fb-err'; fb.textContent='✗ Not quite. Try again.';
+    setTimeout(()=>{ inp.className='answer-input'; fb.className='feedback'; }, 1200);
+  }
+}
+
+/* ── GEO ── */
+function renderGeo(stage) { return `
+  <div style="font-size:14px;line-height:1.65;padding:14px 16px;background:var(--bg3);border-radius:var(--r);border:0.5px solid var(--border2);margin-bottom:14px;">${stage.instruction}</div>
+  <div class="geo-status"><div class="geo-dot" id="gdot"></div><span id="gtxt">Tap below when you've arrived at the location.</span></div>
+  <div class="feedback" id="fb"></div>
+  <button class="btn btn-primary" id="geo-btn" onclick="checkGeo()">📍 I'm here — verify location</button>`; }
+
+function checkGeo() {
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  const dot=document.getElementById('gdot'),txt=document.getElementById('gtxt'),btn=document.getElementById('geo-btn'),fb=document.getElementById('fb');
+  dot.className='geo-dot checking'; txt.textContent='Acquiring GPS position…'; btn.disabled=true;
+  if (!navigator.geolocation) { txt.textContent='Geolocation not supported.'; btn.disabled=false; return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const d = haversine(pos.coords.latitude,pos.coords.longitude,stage.targetLat,stage.targetLng);
+    if (d <= stage.radiusMeters) {
+      dot.className='geo-dot close'; txt.textContent=`Position verified (${Math.round(d)}m)`;
+      fb.className='feedback fb-ok'; fb.textContent='✓ Location confirmed.';
+      setTimeout(()=>advance(),1400);
     } else {
-      distEl.className  = 'node-dist';
-      btnEl.textContent = 'OUT OF RANGE';
-      btnEl.className   = 'node-btn';
-      btnEl.disabled    = true;
-      cardEl.className  = 'node-card';
+      dot.className='geo-dot far'; txt.textContent=`${Math.round(d)}m away — need to be within ${stage.radiusMeters}m`;
+      fb.className='feedback fb-err'; fb.textContent='✗ Not close enough yet.';
+      btn.disabled=false; setTimeout(()=>{ fb.className='feedback'; },2000);
+    }
+  },()=>{ dot.className='geo-dot far'; txt.textContent='Could not get location. Check permissions.'; btn.disabled=false; },
+  {enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+
+/* ── GEO + QUIZ (pirate) ── */
+function renderGeoQuiz(stage) {
+  const opts = stage.options.map((o,i)=>`
+    <button class="mc-option" id="mc-${i}" onclick="selectOption(${i})">
+      <span class="mc-key">${String.fromCharCode(65+i)}</span>${o}
+    </button>`).join('');
+  return `
+    <div class="geo-status"><div class="geo-dot" id="gdot"></div><span id="gtxt">Make your way to this location, then tap below.</span></div>
+    <div class="feedback" id="fb"></div>
+    <button class="btn btn-primary" id="geo-btn" onclick="checkGeoThenQuiz()">📍 I'm here — verify location</button>
+    <div id="quiz-area" style="display:none;margin-top:18px;">
+      <div style="height:0.5px;background:var(--border);margin-bottom:18px;"></div>
+      <div class="mc-question">${stage.question.replace(/\n/g,'<br>')}</div>
+      <div class="mc-options">${opts}</div>
+    </div>`; }
+
+function checkGeoThenQuiz() {
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  const dot=document.getElementById('gdot'),txt=document.getElementById('gtxt'),btn=document.getElementById('geo-btn'),fb=document.getElementById('fb');
+  dot.className='geo-dot checking'; txt.textContent='Acquiring GPS position…'; btn.disabled=true;
+  if (!navigator.geolocation) {
+    // Fallback: skip geo check, show quiz anyway
+    txt.textContent='GPS unavailable — showing challenge.';
+    document.getElementById('quiz-area').style.display='block'; return;
+  }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const d = haversine(pos.coords.latitude,pos.coords.longitude,stage.targetLat,stage.targetLng);
+    if (d <= stage.radiusMeters) {
+      dot.className='geo-dot close'; txt.textContent=`Location verified! (${Math.round(d)}m away)`;
+      fb.className='feedback fb-ok'; fb.textContent="✓ Ye've arrived! Now answer the challenge.";
+      setTimeout(()=>{ fb.className='feedback'; document.getElementById('quiz-area').style.display='block'; document.getElementById('quiz-area').scrollIntoView({behavior:'smooth'}); },700);
+      btn.style.display='none';
+    } else {
+      dot.className='geo-dot far'; txt.textContent=`${Math.round(d)}m away — get closer!`;
+      fb.className='feedback fb-err'; fb.textContent=`✗ Not close enough yet (need within ${stage.radiusMeters}m).`;
+      btn.disabled=false; setTimeout(()=>{ fb.className='feedback'; },2200);
+    }
+  },()=>{
+    dot.className='geo-dot far'; txt.textContent='Could not get location.';
+    document.getElementById('quiz-area').style.display='block'; btn.disabled=false;
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+
+function selectOption(idx) {
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  const opts = document.querySelectorAll('.mc-option');
+  opts.forEach(o => o.classList.add('disabled'));
+  const fb = document.getElementById('fb');
+  if (idx === stage.correctIndex) {
+    opts[idx].classList.add('correct');
+    fb.className='feedback fb-ok'; fb.textContent='⚓ ' + stage.successText;
+    setTimeout(()=>advance(), 2000);
+  } else {
+    opts[idx].classList.add('wrong');
+    opts[stage.correctIndex].classList.add('correct');
+    fb.className='feedback fb-err'; fb.textContent="✗ Not quite, matey! The correct answer is shown above. Keep sailing!";
+    setTimeout(()=>{
+      opts.forEach(o=>{ o.classList.remove('disabled','correct','wrong'); });
+      fb.className='feedback';
+    },2500);
+  }
+}
+
+/* ── GEO FINAL (pirate beach) ── */
+function renderGeoFinal(stage) { return `
+  <div class="geo-status"><div class="geo-dot" id="gdot"></div><span id="gtxt">Make your way to the final location!</span></div>
+  <div class="feedback" id="fb"></div>
+  <button class="btn btn-primary" id="geo-btn" onclick="checkGeoFinal()">📍 I've found the X!</button>`; }
+
+function checkGeoFinal() {
+  const stage = ACTIVE_HUNT.stages[STATE.stageIdx];
+  const dot=document.getElementById('gdot'),txt=document.getElementById('gtxt'),btn=document.getElementById('geo-btn'),fb=document.getElementById('fb');
+  dot.className='geo-dot checking'; txt.textContent='Verifying location…'; btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const d = haversine(pos.coords.latitude,pos.coords.longitude,stage.targetLat,stage.targetLng);
+    if (d <= stage.radiusMeters) {
+      dot.className='geo-dot close';
+      fb.className='feedback fb-ok'; fb.textContent='🏴‍☠️ ' + stage.successText;
+      setTimeout(()=>advance(),2200);
+    } else {
+      dot.className='geo-dot far'; txt.textContent=`${Math.round(d)}m away — keep searching!`;
+      fb.className='feedback fb-err'; fb.textContent='✗ Not there yet — look around more carefully!';
+      btn.disabled=false; setTimeout(()=>{ fb.className='feedback'; },2000);
+    }
+  },()=>{ dot.className='geo-dot far'; txt.textContent='Could not get location.'; btn.disabled=false; },
+  {enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+
+/* ── QR ── */
+let qrStream = null;
+function renderQR(stage) { return `
+  <div style="font-size:14px;line-height:1.65;padding:14px 16px;background:var(--bg3);border-radius:var(--r);border:0.5px solid var(--border2);margin-bottom:14px;">${stage.instruction}</div>
+  <div class="feedback" id="fb"></div>
+  <button class="btn btn-primary" onclick="startQR('qr-area')">📷 Scan QR code</button>
+  <div id="qr-area" style="margin-top:10px;"></div>
+  <div style="margin-top:12px;">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:6px;">Manual token entry:</p>
+    <input class="answer-input" id="qr-manual" placeholder="Enter token code…" autocapitalize="characters" onkeydown="if(event.key==='Enter')checkQRManual()">
+    <button class="btn btn-secondary" style="margin-top:6px;" onclick="checkQRManual()">Verify</button>
+  </div>`; }
+
+function checkQRManual() { verifyToken(document.getElementById('qr-manual').value.trim().toUpperCase()); }
+
+function startQR(areaId) {
+  stopQR();
+  const area = document.getElementById(areaId);
+  area.innerHTML=`<video id="qr-video" autoplay muted playsinline></video><button class="btn btn-secondary" style="margin-top:6px;" onclick="stopQR()">Cancel</button>`;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(s=>{qrStream=s;const v=document.getElementById('qr-video');v.srcObject=s;v.play();qrLoop(v);})
+    .catch(()=>{ area.innerHTML='<p style="font-size:13px;color:var(--danger);">Camera access denied. Use manual entry below.</p>'; });
+}
+function stopQR() { if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null;} }
+function qrLoop(video) {
+  if (!qrStream) return;
+  if (video.readyState<2){requestAnimationFrame(()=>qrLoop(video));return;}
+  const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
+  c.getContext('2d').drawImage(video,0,0);
+  try { if(window.jsQR){const r=jsQR(c.getContext('2d').getImageData(0,0,c.width,c.height).data,c.width,c.height);if(r){stopQR();verifyToken(r.data);return;}} } catch(e){}
+  setTimeout(()=>qrLoop(video),200);
+}
+function verifyToken(token) {
+  const stage=ACTIVE_HUNT.stages[STATE.stageIdx];
+  const fb=document.getElementById('fb');
+  if (token.toUpperCase()===stage.expectedToken.toUpperCase()) {
+    fb.className='feedback fb-ok'; fb.textContent='✓ Token verified.';
+    setTimeout(()=>advance(),1300);
+  } else {
+    fb.className='feedback fb-err'; fb.textContent='✗ Token not recognized.';
+    setTimeout(()=>{fb.className='feedback';},2000);
+  }
+}
+
+/* ── FRAGMENT ── */
+function renderFragment(stage) {
+  const f = ACTIVE_HUNT.fragments[stage.fragmentIndex];
+  return `<div style="text-align:center;padding:14px 0 4px;">
+    <div style="width:90px;height:90px;border:2px solid var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 10px;background:rgba(240,192,48,0.07);">${f||'📄'}</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Fragment ${(stage.fragmentIndex||0)+1} of ${ACTIVE_HUNT.fragments.length} collected</p>
+  </div>
+  <button class="btn btn-primary" onclick="collectFrag()">✨ Collect and continue</button>`; }
+function collectFrag() {
+  const s=ACTIVE_HUNT.stages[STATE.stageIdx];
+  if(s.fragmentIndex!==null&&!STATE.fragments.includes(s.fragmentIndex))STATE.fragments.push(s.fragmentIndex);
+  save(); advance();
+}
+
+/* ── GEOPUZZLE ── */
+const YARDS = 0.9144;
+let gpTimer=null,gpSecs=0,gpHits=new Set(),gpNodes=[],gpWatch=null,gpRunning=false;
+
+function geoOffset(lat,lng,northYd,eastYd) {
+  const nM=northYd*YARDS,eM=eastYd*YARDS;
+  return {lat:lat+(nM/111320),lng:lng+(eM/(111320*Math.cos(lat*Math.PI/180)))};
+}
+function haversineYards(a,b,c,d) {
+  const R=6371000,f1=a*Math.PI/180,f2=c*Math.PI/180,df=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180;
+  return 2*R*Math.asin(Math.sqrt(Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2))/YARDS;
+}
+
+function renderGeopuzzle(stage) {
+  const cards=stage.nodeNames.map((_,i)=>`
+    <div class="node-card" id="nc-${i}">
+      <div class="nc-header">
+        <span class="nc-label" id="nc-lbl-${i}">${stage.nodeNames[i]}</span>
+        <span class="nc-dist" id="nc-dist-${i}">-- yds</span>
+      </div>
+      <button class="nc-btn" id="nc-btn-${i}" disabled onclick="gpHitNode(${i})">OUT OF RANGE</button>
+    </div>`).join('');
+  const pips=stage.nodeNames.map((_,i)=>`<div class="node-pip" id="gp-pip-${i}"></div>`).join('');
+  return `
+    <div style="font-size:14px;line-height:1.65;padding:14px 16px;background:var(--bg3);border-radius:var(--r);border:0.5px solid rgba(240,90,90,0.3);margin-bottom:14px;">Three sensor nodes are positioned around the pool area. Walk to each one and tap <strong>CAPTURE</strong> when within range. Capture all three before the timer expires.</div>
+    <div class="countdown-wrap" id="gp-cd">
+      <div class="countdown-ring">
+        <svg width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45"/><circle class="arc" id="gp-arc" cx="50" cy="50" r="45"/></svg>
+        <div class="countdown-num" id="gp-num">1:00</div>
+      </div>
+      <div class="countdown-label">TIME REMAINING</div>
+    </div>
+    <div class="node-pip-row">${pips}<span class="node-pip-label">nodes captured</span></div>
+    <div class="feedback" id="fb"></div>
+    <div class="node-cards">${cards}</div>
+    <button class="btn btn-danger" id="gp-start-btn" onclick="gpStart()">⚡ Deploy — timer starts now</button>`; }
+
+function setupGeopuzzle(stage) {
+  gpHits=new Set(); gpRunning=false; gpSecs=0;
+  if(gpWatch!==null){navigator.geolocation.clearWatch(gpWatch);gpWatch=null;}
+  clearInterval(gpTimer);
+  gpNodes=stage.nodeOffsets.map(([n,e],i)=>({id:i,name:stage.nodeNames[i],...geoOffset(stage.centerLat,stage.centerLng,n,e)}));
+}
+
+function gpStart() {
+  const stage=ACTIVE_HUNT.stages[STATE.stageIdx];
+  document.getElementById('gp-start-btn').style.display='none';
+  gpRunning=true; gpSecs=stage.timeLimitSeconds;
+  gpTick(gpSecs,stage.timeLimitSeconds);
+  gpTimer=setInterval(()=>{ gpSecs--; gpTick(gpSecs,stage.timeLimitSeconds); if(gpSecs<=0){clearInterval(gpTimer);gpFail();} },1000);
+  if(!navigator.geolocation){const fb=document.getElementById('fb');if(fb){fb.className='feedback fb-err';fb.textContent='GPS not available.';}return;}
+  gpWatch=navigator.geolocation.watchPosition(pos=>{if(gpRunning)gpUpdateDist(pos.coords.latitude,pos.coords.longitude);},()=>{},
+    {enableHighAccuracy:true,maximumAge:1000,timeout:10000});
+}
+
+function gpTick(s,total) {
+  const el=document.getElementById('gp-num'),arc=document.getElementById('gp-arc'),wrap=document.getElementById('gp-cd');
+  if(!el)return;
+  el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  arc.style.strokeDashoffset=283*(1-(s/total));
+  wrap.className='countdown-wrap'+(s<=10?' critical':s<=20?' warning':'');
+}
+
+function gpUpdateDist(lat,lng) {
+  const stage=ACTIVE_HUNT.stages[STATE.stageIdx];
+  gpNodes.forEach(node=>{
+    if(gpHits.has(node.id))return;
+    const dist=Math.round(haversineYards(lat,lng,node.lat,node.lng));
+    const distEl=document.getElementById('nc-dist-'+node.id);
+    const btnEl=document.getElementById('nc-btn-'+node.id);
+    const cardEl=document.getElementById('nc-'+node.id);
+    if(!distEl)return;
+    distEl.textContent=dist+' yds';
+    if(dist<=stage.hitRadiusYards){
+      distEl.className='nc-dist close'; btnEl.textContent='TAP TO CAPTURE';
+      btnEl.className='nc-btn unlocked'; btnEl.disabled=false; cardEl.className='node-card nc-active';
+    } else {
+      distEl.className='nc-dist'; btnEl.textContent='OUT OF RANGE';
+      btnEl.className='nc-btn'; btnEl.disabled=true; cardEl.className='node-card';
     }
   });
-  if (!anyClose && hits.size < 3) setMessage('Move to a node to capture it.');
 }
 
-function hitNode(id) {
-  if (!gameRunning || hits.has(id) || !userPos) return;
-  const node = NODES.find(n => n.id === id);
-  if (haversineYards(userPos.lat, userPos.lng, node.lat, node.lng) > HIT_RADIUS) return;
-
-  hits.add(id);
-  document.getElementById(`card-${id}`).className = 'node-card done';
-  const btn = document.getElementById(`btn-${id}`);
-  btn.textContent = '✓ CAPTURED';
-  btn.className   = 'node-btn done-btn';
-  btn.disabled    = true;
-  document.getElementById(`pip-${id}`).className = 'pip hit';
-  drawMap();
-  if (hits.size === 3) endGame(true);
+function gpHitNode(id) {
+  const stage=ACTIVE_HUNT.stages[STATE.stageIdx];
+  if(!gpRunning||gpHits.has(id))return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const dist=haversineYards(pos.coords.latitude,pos.coords.longitude,gpNodes[id].lat,gpNodes[id].lng);
+    if(dist>stage.hitRadiusYards){
+      const fb=document.getElementById('fb');
+      if(fb){fb.className='feedback fb-warn';fb.textContent='⚠ Moved out of range — get closer.';setTimeout(()=>{if(fb)fb.className='feedback';},1500);}
+      return;
+    }
+    gpHits.add(id);
+    document.getElementById('nc-'+id).className='node-card nc-done';
+    document.getElementById('nc-btn-'+id).textContent='✓ CAPTURED';
+    document.getElementById('nc-btn-'+id).className='nc-btn captured';
+    document.getElementById('nc-btn-'+id).disabled=true;
+    document.getElementById('nc-lbl-'+id).className='nc-label done-label';
+    document.getElementById('gp-pip-'+id).className='node-pip hit';
+    const fb=document.getElementById('fb');
+    if(fb){fb.className='feedback fb-ok';fb.textContent=`✓ ${gpNodes[id].name} captured! ${gpNodes.length-gpHits.size} remaining.`;setTimeout(()=>{if(fb)fb.className='feedback';},1200);}
+    if(gpHits.size===gpNodes.length) gpWin();
+  },{enableHighAccuracy:true,timeout:5000,maximumAge:0});
 }
 
-function setMessage(text, cls = '') {
-  const el = document.getElementById('message');
-  el.textContent = text;
-  el.className   = cls;
+function gpWin() {
+  gpRunning=false; clearInterval(gpTimer);
+  if(gpWatch!==null){navigator.geolocation.clearWatch(gpWatch);gpWatch=null;}
+  const fb=document.getElementById('fb');
+  if(fb){fb.className='feedback fb-ok';fb.textContent='✓ ALL NODES CAPTURED — data core going offline!';}
+  setTimeout(()=>advance(),1800);
+}
+function gpFail() {
+  gpRunning=false;
+  if(gpWatch!==null){navigator.geolocation.clearWatch(gpWatch);gpWatch=null;}
+  const fb=document.getElementById('fb');
+  if(fb){fb.className='feedback fb-err';fb.textContent=`✗ TIME EXPIRED — ${gpHits.size}/3 nodes captured. Try again!`;}
+  const btn=document.createElement('button');
+  btn.className='btn btn-warn'; btn.style.marginTop='12px'; btn.textContent='⚡ Try again';
+  btn.onclick=()=>{ setupGeopuzzle(ACTIVE_HUNT.stages[STATE.stageIdx]); renderStage(); };
+  document.getElementById('stage-body').appendChild(btn);
+}
+function stopGeopuzzle() {
+  gpRunning=false; clearInterval(gpTimer); gpTimer=null;
+  if(gpWatch!==null){navigator.geolocation.clearWatch(gpWatch);gpWatch=null;}
 }
 
-// ── TIMER ────────────────────────────────────────────────────────────────────
-function updateTimer() {
-  timeLeft--;
-  const el  = document.getElementById('timer-display');
-  const bar = document.getElementById('progress-bar');
-  el.textContent        = formatTime(timeLeft);
-  bar.style.width       = `${(timeLeft / TOTAL_TIME) * 100}%`;
-  if (timeLeft <= 15) { el.className = 'warning'; bar.className = 'warning'; }
-  if (timeLeft <= 0)  endGame(false);
+/* ── ADVANCE ── */
+function advance() {
+  const s=ACTIVE_HUNT.stages[STATE.stageIdx];
+  if(!STATE.completed.includes(s.id)) STATE.completed.push(s.id);
+  STATE.stageIdx++;
+  save();
+  const evil = s.narrator?.mood==='evil';
+  const el=document.createElement('div'); el.className='unlock-flash'+(evil?' evil-flash':'');
+  document.body.appendChild(el); setTimeout(()=>el.remove(),700);
+  if(STATE.stageIdx>=ACTIVE_HUNT.stages.length){setTimeout(()=>completeHunt(),400);return;}
+  setTimeout(()=>renderStage(),350);
 }
 
-// ── PERMISSION FLOW ──────────────────────────────────────────────────────────
-function requestPermission() {
-  document.getElementById('perm-error').textContent = '';
-  document.getElementById('perm-btn').textContent   = 'REQUESTING…';
-  document.getElementById('perm-btn').disabled      = true;
-
-  if (!navigator.geolocation) {
-    showPermError('Geolocation is not supported by this browser.');
+/* ── TRAY ── */
+function renderTray() {
+  const h=ACTIVE_HUNT;
+  document.getElementById('tray-nav-label').textContent = h.id==='pirate'?'BOOTY COLLECTED':'ARTIFACT TRAY';
+  document.getElementById('tray-card-label').textContent = h.id==='pirate'?'Pirate booty':'Collected intel fragments';
+  const grid=document.getElementById('tray-grid');
+  if(!h.fragments||h.fragments.length===0){
+    grid.innerHTML='<p style="font-size:13px;color:var(--muted);padding:8px 0;">No collectibles in this mission.</p>';
+    document.getElementById('assembler-card').style.display='none';
+    document.getElementById('tray-hint').textContent='';
     return;
   }
-
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      // Permission granted — stash a first fix, then go to start screen
-      userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      document.getElementById('perm-screen').style.display  = 'none';
-      document.getElementById('start-screen').style.display = 'flex';
-    },
-    err => {
-      document.getElementById('perm-btn').textContent = 'TRY AGAIN';
-      document.getElementById('perm-btn').disabled    = false;
-      const msgs = {
-        1: 'Permission denied. Please allow location in your browser settings and try again.',
-        2: 'Position unavailable. Make sure GPS is enabled on your device.',
-        3: 'Request timed out. Move to an area with better signal and try again.',
-      };
-      showPermError(msgs[err.code] || 'Unknown error: ' + err.message);
-    },
-    { enableHighAccuracy: true, timeout: 15000 }
-  );
+  grid.innerHTML=h.fragments.map((f,i)=>{
+    const c=STATE.fragments.includes(i);
+    return`<div class="tray-slot${c?' collected':''}">${c?f:''}</div>`;
+  }).join('');
+  const all=STATE.fragments.length===h.fragments.length;
+  document.getElementById('assembler-card').style.display=all?'block':'none';
+  if(all) document.getElementById('assembler-content').textContent=h.fragments.join('  ');
+  document.getElementById('tray-hint').textContent=all?'All fragments recovered.':
+    `${STATE.fragments.length} of ${h.fragments.length} fragments recovered.`;
 }
 
-function showPermError(msg) {
-  document.getElementById('perm-error').textContent = msg;
-  document.getElementById('perm-btn').textContent   = 'TRY AGAIN';
-  document.getElementById('perm-btn').disabled      = false;
-}
-
-// ── GAME FLOW ─────────────────────────────────────────────────────────────────
-function startGame() {
-  hits.clear();
-  timeLeft   = TOTAL_TIME;
-  gameRunning = true;
-
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('end-screen').style.display   = 'none';
-  document.getElementById('end-screen').className       = '';
-  document.getElementById('game-ui').className          = 'game-ui active';
-  document.getElementById('timer-display').textContent  = formatTime(timeLeft);
-  document.getElementById('timer-display').className    = '';
-  document.getElementById('progress-bar').style.width   = '100%';
-  document.getElementById('progress-bar').className     = '';
-  [0,1,2].forEach(i => document.getElementById(`pip-${i}`).className = 'pip');
-
-  buildCards();
-  setMessage('GPS signal acquired — go!', 'ok');
-  resizeCanvas();
-  drawMap();
-
-  timerInterval = setInterval(updateTimer, 1000);
-
-  watchId = navigator.geolocation.watchPosition(
-    pos => {
-      userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (gameRunning) {
-        updateCardDistances();
-        drawMap();
-      }
-    },
-    err => { setMessage('GPS lost: ' + err.message, 'fail'); },
-    { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
-  );
-}
-
-function endGame(won) {
-  gameRunning = false;
-  clearInterval(timerInterval);
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-
-  document.getElementById('game-ui').className = 'game-ui';
-  const endScreen = document.getElementById('end-screen');
-  if (won) {
-    endScreen.className = 'win';
-    document.getElementById('end-title').textContent = 'SEQUENCE COMPLETE';
-    document.getElementById('end-sub').textContent   =
-      `All three nodes captured with ${formatTime(timeLeft)} remaining.`;
-  } else {
-    endScreen.className = 'lose';
-    document.getElementById('end-title').textContent = 'TIME EXPIRED';
-    document.getElementById('end-sub').textContent   =
-      `${hits.size} of 3 nodes captured. The sequence has reset.`;
+/* ── MAP ── */
+let leafletMap=null;
+function renderMap() {
+  if(typeof L==='undefined'){
+    document.getElementById('leaflet-map').innerHTML='<p style="color:var(--muted);font-size:13px;padding:20px;text-align:center;">Map loading…</p>';
+    setTimeout(renderMap,800); return;
   }
-  endScreen.style.display = 'flex';
+  document.getElementById('leaflet-map').style.height=(window.innerHeight-56)+'px';
+  if(!leafletMap){
+    leafletMap=L.map('leaflet-map',{zoomControl:true}).setView(ACTIVE_HUNT.mapCenter,ACTIVE_HUNT.mapZoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19}).addTo(leafletMap);
+  } else {
+    leafletMap.setView(ACTIVE_HUNT.mapCenter,ACTIVE_HUNT.mapZoom);
+  }
+  leafletMap.eachLayer(l=>{if(l instanceof L.Marker)leafletMap.removeLayer(l);});
+  ACTIVE_HUNT.stages.forEach((stage,i)=>{
+    if(!stage.mapPin)return;
+    const done=STATE.completed.includes(stage.id);
+    const cur=i===STATE.stageIdx&&!STATE.complete;
+    const locked=!done&&!cur;
+    const col=done?'#3de8a0':cur?'#8b7cf8':'#252a44';
+    const isPirate=ACTIVE_HUNT.id==='pirate';
+    const lbl=locked?(isPirate?'⚓':'?'):(i+1).toString();
+    const popLabel=locked?(isPirate?'Hidden — keep searching!':'Location classified'):stage.mapPin.label;
+    const icon=L.divIcon({className:'',
+      html:`<div style="width:30px;height:30px;border-radius:50%;background:${col};border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:${done?'#061810':'#dde0f0'};font-size:${locked&&isPirate?'14px':'12px'};font-weight:700;font-family:system-ui;box-shadow:0 1px 6px rgba(0,0,0,0.5);${cur?'animation:pulse 1.5s infinite;':''}">${lbl}</div>`,
+      iconSize:[30,30],iconAnchor:[15,15]});
+    L.marker([stage.mapPin.lat,stage.mapPin.lng],{icon}).addTo(leafletMap).bindPopup(`<strong>${stage.label}</strong><br>${popLabel}`);
+  });
+  setTimeout(()=>leafletMap.invalidateSize(),100);
 }
 
-// ── EVENTS ───────────────────────────────────────────────────────────────────
-document.getElementById('perm-btn').addEventListener('click', requestPermission);
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('restart-btn').addEventListener('click', () => {
-  document.getElementById('end-screen').style.display  = 'none';
-  document.getElementById('start-screen').style.display = 'flex';
-});
+/* ── DOSSIER ── */
+function renderDossier() {
+  if(!ACTIVE_HUNT){return;}
+  const pct=Math.round((STATE.stageIdx/ACTIVE_HUNT.stages.length)*100);
+  document.getElementById('dos-pbar').style.width=pct+'%';
+  document.getElementById('dos-label').textContent=STATE.complete?
+    (ACTIVE_HUNT.id==='pirate'?'Treasure found! ⚓':'Mission complete!'):
+    `${ACTIVE_HUNT.id==='pirate'?'Clue':'Stage'} ${STATE.stageIdx+1} of ${ACTIVE_HUNT.stages.length}`;
+  document.getElementById('export-code').textContent=encState(STATE);
+  if(gmOpen){
+    document.getElementById('gm-locked').style.display='none';
+    document.getElementById('gm-unlocked').style.display='block';
+    const sel=document.getElementById('gm-select');
+    sel.innerHTML=ACTIVE_HUNT.stages.map((s,i)=>`<option value="${i}">${s.label}: ${s.title}</option>`).join('');
+    sel.value=STATE.stageIdx;
+  }
+}
 
-window.addEventListener('resize', () => { if (gameRunning) { resizeCanvas(); drawMap(); } });
+function encState(st) {
+  const b=btoa(unescape(encodeURIComponent(JSON.stringify(st)))).replace(/[^A-Z0-9]/gi,'').toUpperCase();
+  const parts=[];for(let i=0;i<12;i+=4)parts.push((b.slice(i,i+4)||'0000').padEnd(4,'0'));
+  const prefix=ACTIVE_HUNT?.id==='pirate'?'VRO':'AHS';
+  return prefix+'-'+parts.join('-');
+}
+function decState(code) {
+  const s=code.toUpperCase().replace(/^(AHS|VRO)-/,'').replace(/-/g,'');
+  try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return null;}
+}
+function copyCode() {
+  navigator.clipboard.writeText(document.getElementById('export-code').textContent).then(()=>{
+    const b=document.getElementById('copy-btn'),m=document.getElementById('copy-msg');
+    b.textContent='Copied!';m.textContent='Code copied.';
+    setTimeout(()=>{b.textContent='Copy';m.textContent='';},2000);
+  }).catch(()=>{document.getElementById('copy-msg').textContent='Copy failed — select code manually.';});
+}
+function restoreCode() {
+  const v=document.getElementById('restore-input').value.trim();
+  const m=document.getElementById('restore-msg');
+  if(!v){m.style.color='var(--danger)';m.textContent='Paste a code first.';return;}
+  const d=decState(v);
+  if(!d||d.stageIdx===undefined){m.style.color='var(--danger)';m.textContent='✗ Invalid code.';return;}
+  STATE=d; save(); m.style.color='var(--accent)'; m.textContent='✓ Progress restored!';
+  setTimeout(()=>{ if(STATE.complete){renderComplete();showScreen('screen-complete');}else{showScreen('screen-stage');renderStage();} },1000);
+}
+function gmSkip() {
+  if(!confirm('Skip to this stage?'))return;
+  const idx=parseInt(document.getElementById('gm-select').value);
+  for(let i=0;i<idx;i++) if(!STATE.completed.includes(ACTIVE_HUNT.stages[i].id)) STATE.completed.push(ACTIVE_HUNT.stages[i].id);
+  STATE.stageIdx=idx; save(); showScreen('screen-stage'); renderStage();
+}
 
-// Initial map draw (no user pos yet)
-window.addEventListener('load', () => { resizeCanvas(); });
+/* ── SHARED GEO MATH ── */
+function haversine(a,b,c,d) {
+  const R=6371000,f1=a*Math.PI/180,f2=c*Math.PI/180,df=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180;
+  return 2*R*Math.asin(Math.sqrt(Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2));
+}
+
+/* ── BOOT ── */
+(function boot() {
+  function loadScript(src){ const s=document.createElement('script');s.src=src;s.async=true;document.head.appendChild(s); }
+  loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+  loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+  // Always start at mission select
+  // (per-mission routing happens inside selectMission())
+}());
 </script>
 </body>
 </html>
