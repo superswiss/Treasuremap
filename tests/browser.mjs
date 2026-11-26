@@ -9,19 +9,20 @@ const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors
 const click=name=>page.getByRole('button',{name,exact:true}).click();
 const expectText=text=>page.getByText(text,{exact:true}).waitFor();
 const close=()=>page.locator('#modal form[method="dialog"] button').click();
+const deployed=JSON.parse(await readFile('content/hunt-settings.json','utf8'));
 try{
   await page.goto('http://localhost:4173');await expectText('Choose your adventure');
   await mkdir('test-results',{recursive:true});await page.screenshot({path:'test-results/home-mobile.png',fullPage:true});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  await page.getByRole('button',{name:'Play in the field',exact:true}).first().click();await expectText('This trail needs its final bearings.');await close();
+  await page.getByRole('button',{name:'Play in the field',exact:true}).last().click();await expectText('This trail needs its final bearings.');await close();
   await page.getByRole('button',{name:'Try the demo →',exact:true}).first().click();await click('Simulate marker scan');await expectText('Nosy T Security Center');
   await click('Simulate arrival');await click('Black');await expectText('Nosy T Security Center');await click('White');
   await click('Continue the mission →');await click('Simulate arrival');await click('Begin sensor sweep');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Capture',exact:true}).first().click();
   await click('Simulate arrival');await click('Blue');await click('Continue the mission →');await expectText('The independent signal');
   await click('Open CipherWave');const [download]=await Promise.all([page.waitForEvent('download'),click('Download Agency signal (.wav)')]);await download.saveAs('test-results/agency-signal.wav');
-  await page.locator('#audio-file').setInputFiles('test-results/agency-signal.wav');await expectText('TRUST YOUR TEAM');await click('Mission');
-  await page.locator('#phrase').fill('trust your team');await click('Break the override →');await click('Simulate arrival');await click('Simulate marker scan');await expectText('Agency restored. Treasure recovered.');
+  await page.locator('#audio-file').setInputFiles('test-results/agency-signal.wav');await expectText(deployed.howell.shutdownPhrase);await click('Mission');
+  await page.locator('#phrase').fill(deployed.howell.shutdownPhrase.toLowerCase());await click('Break the override →');await click('Simulate arrival');await click('Simulate marker scan');await expectText('Agency restored. Treasure recovered.');
   await click('Open your journal →');await page.locator('#note').fill('Team Ω found the signal 🗺️');await click('Save note');await page.getByText('Team Ω found the signal 🗺️').waitFor();
   await page.locator('#photo').setInputFiles('test-results/home-mobile.png');await page.locator('.note-photo').waitFor();await click('Delete photo');await page.locator('.note-photo').waitFor({state:'detached'});
   await page.reload();await page.getByRole('button',{name:'Resume demo →',exact:true}).first().click();await expectText('Agency restored. Treasure recovered.');

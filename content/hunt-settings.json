@@ -2,29 +2,82 @@
   "organizerPin": "1980",
   "howell": {
     "locations": {
-      "security": null,
-      "pool": null,
-      "alpha": null,
-      "bravo": null,
-      "charlie": null,
-      "processor": null,
-      "treasure": null
+      "security": {
+        "lat": 28.687743,
+        "lng": -81.2454468
+      },
+      "pool": {
+        "lat": 28.6873877,
+        "lng": -81.2359384
+      },
+      "alpha": {
+        "lat": 28.6877406,
+        "lng": -81.2358069
+      },
+      "bravo": {
+        "lat": 28.6872962,
+        "lng": -81.2357549
+      },
+      "charlie": {
+        "lat": 28.6874747,
+        "lng": -81.2355816
+      },
+      "processor": {
+        "lat": 28.6875335,
+        "lng": -81.2360591
+      },
+      "treasure": {
+        "lat": 28.6863221,
+        "lng": -81.2423774
+      }
     },
-    "fenceAnswer": "",
-    "fizzAnswer": "",
-    "shutdownPhrase": "TRUST YOUR TEAM",
+    "fenceAnswer": "White",
+    "fizzAnswer": "Blue",
+    "shutdownPhrase": "MANKIND BEFORE MACHINES",
     "sensorSeconds": 180,
-    "captureRadiusMeters": 18,
-    "arrivalRadiusMeters": 35
+    "captureRadiusMeters": 10,
+    "arrivalRadiusMeters": 20
   },
   "pirate": {
-    "locations": { "clue1": null, "clue2": null, "clue3": null, "clue4": null, "clue5": null, "treasure": null },
+    "locations": {
+      "clue1": null,
+      "clue2": null,
+      "clue3": null,
+      "clue4": null,
+      "clue5": null,
+      "treasure": null
+    },
     "clues": [
-      { "title": "The First Bearing", "question": "", "options": [], "answer": "" },
-      { "title": "The Lookout", "question": "", "options": [], "answer": "" },
-      { "title": "The Castaway's Mark", "question": "", "options": [], "answer": "" },
-      { "title": "The Captain's Compass", "question": "", "options": [], "answer": "" },
-      { "title": "The Last Bearing", "question": "", "options": [], "answer": "" }
+      {
+        "title": "The First Bearing",
+        "question": "",
+        "options": [],
+        "answer": ""
+      },
+      {
+        "title": "The Lookout",
+        "question": "",
+        "options": [],
+        "answer": ""
+      },
+      {
+        "title": "The Castaway's Mark",
+        "question": "",
+        "options": [],
+        "answer": ""
+      },
+      {
+        "title": "The Captain's Compass",
+        "question": "",
+        "options": [],
+        "answer": ""
+      },
+      {
+        "title": "The Last Bearing",
+        "question": "",
+        "options": [],
+        "answer": ""
+      }
     ],
     "arrivalRadiusMeters": 35
   }

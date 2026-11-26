@@ -24,7 +24,8 @@ test('GPS checks require fresh, accurate fixes within configured range',()=>{
   assert.ok(withinRange(p,p,18,100001));assert.equal(withinRange({...p,accuracy:40},p,18,100001),false);assert.equal(withinRange(p,p,18,121000),false);
 });
 test('unconfigured real routes stay blocked; fully configured routes pass',()=>{
-  assert.ok(settingsProblems(settings,'howell').length);assert.ok(settingsProblems(settings,'pirate').length);
+  const incomplete=structuredClone(settings);for(const config of [incomplete.howell,incomplete.pirate])for(const key of Object.keys(config.locations))config.locations[key]=null;
+  assert.ok(settingsProblems(incomplete,'howell').length);assert.ok(settingsProblems(incomplete,'pirate').length);
   const complete=structuredClone(settings);for(const config of [complete.howell,complete.pirate])for(const key of Object.keys(config.locations))config.locations[key]={lat:28.6,lng:-81.2};complete.howell.fenceAnswer='White';complete.howell.fizzAnswer='Blue';complete.pirate.clues=complete.pirate.clues.map(c=>({...c,question:'Which color?',options:['Red','Blue'],answer:'Red'}));
   assert.deepEqual(settingsProblems(complete,'howell'),[]);assert.deepEqual(settingsProblems(complete,'pirate'),[]);
 });
