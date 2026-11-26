@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b29">
+  <meta name="description" content="Hidden Trails: story-driven treasure hunts for your next real-world adventure.">
+  <title>Hidden Trails · Field adventures</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="masthead"><a href="#/" class="brand"><span class="brand-mark">⌖</span><span>HIDDEN TRAILS<small>EXTRAORDINARY THINGS ARE NEARBY</small></span></a><button id="help" class="quiet">Field guide</button></header>
+  <main id="app"><p class="loading">Opening your field journal…</p></main>
+  <footer>Made for curious minds & muddy shoes. <button id="organizer" class="text-button">Organizer access</button></footer>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <dialog id="modal"><div id="modal-body"></div><form method="dialog"><button class="quiet">Close</button></form></dialog>
+  <noscript>This game needs JavaScript enabled. Serve it using the included local server or GitHub Pages.</noscript>
+</body>
+</html>

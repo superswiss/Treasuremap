@@ -1,0 +1,312 @@
+{
+  "hunt": {
+    "id": "howell-sneak-steve",
+    "title": "Agency of Howell Sneak: STEVE Protocol",
+    "locationName": "Howell Creek District",
+    "agencyName": "Agency of Howell Sneak",
+    "guideName": "STEVE",
+    "guideFullName": "Synthetic Telephonic Executive Virtual Entity",
+    "defaultInterfaceMode": "agency",
+    "progressLabel": "Agency Dossier",
+    "adventureLogLabel": "Field Log"
+  },
+  "privacy": {
+    "summary": "Game progress, photos, notes, GPS checks, and audio processing stay on this device. Hosting, external fonts, the map library, and map tiles require network requests. Map tile requests reveal the viewed area to the tile provider.",
+    "usesLocation": true,
+    "usesCameraForQr": true,
+    "usesNfcLinks": true
+  },
+  "parentAccess": {
+    "pinHint": "The decade in which Saturday morning cartoons were on TV, video killed the radio star, Marty McFly first drove in a DeLorean, and the era in which Stranger Things takes place.",
+    "suggestedPin": "1980",
+    "securityNote": "For a static GitHub Pages app, this PIN is only a kid-resistant control, not true security."
+  },
+  "ttsProfiles": {
+    "friendly": {
+      "voiceHint": "Microsoft David",
+      "rate": 0.94,
+      "pitch": 0.92,
+      "sapiRate": -1
+    },
+    "urgent": {
+      "voiceHint": "Microsoft David",
+      "rate": 1.02,
+      "pitch": 0.86,
+      "sapiRate": 1
+    },
+    "corrupted": {
+      "voiceHint": "Microsoft David",
+      "rate": 0.82,
+      "pitch": 0.58,
+      "sapiRate": -3
+    },
+    "restored": {
+      "voiceHint": "Microsoft David",
+      "rate": 0.9,
+      "pitch": 0.96,
+      "sapiRate": -1
+    }
+  },
+  "transmissions": {
+    "welcome": {
+      "id": "welcome",
+      "title": "Secure Channel Open",
+      "interfaceMode": "agency",
+      "ttsProfile": "friendly",
+      "audio": "audio/steve/00-secure-channel-open.wav",
+      "text": "Secure channel open. Greetings, agents. I am STEVE, the Synthetic Telephonic Executive Virtual Entity assigned to protect the Howell Creek District. Your device is now linked to the Agency of Howell Sneak field network. Stand by for mission activation."
+    },
+    "mission-01-activation": {
+      "id": "mission-01-activation",
+      "title": "Mission Activation",
+      "interfaceMode": "agency",
+      "ttsProfile": "friendly",
+      "audio": "audio/steve/01-mission-activation.wav",
+      "text": "Agents, unusual activity has been detected across the Howell Creek District. The Agency of Howell Sneak requires your immediate assistance. Your first assignment is to report to Nosy T Security Center. There you will recover the initial intelligence map and identify the first point of suspicious activity. Move carefully. Look ordinary. Trust STEVE."
+    },
+    "mission-02-nosy-t": {
+      "id": "mission-02-nosy-t",
+      "title": "Nosy T Security Center",
+      "interfaceMode": "agency",
+      "ttsProfile": "friendly",
+      "audio": "audio/steve/02-nosy-t-security-center.wav",
+      "text": "You have reached Nosy T Security Center. Excellent field work. Agency cameras show evidence of tampering, but the intruder forgot one detail: the visual authentication marker. Inspect the area and answer the security question. What color is the fence? Correct authentication will unlock the map of trouble areas."
+    },
+    "mission-03-map-unlocked": {
+      "id": "mission-03-map-unlocked",
+      "title": "Trouble Map Unlocked",
+      "interfaceMode": "unstable",
+      "ttsProfile": "friendly",
+      "audio": "audio/steve/03-trouble-map-unlocked.wav",
+      "effects": ["minorGlitch"],
+      "text": "Map decrypted. Trouble signals are converging near the pool area. The Agency believes the pool is being used to cool an underground data center. That is unusual for a pool. Proceed to the pool data center and prepare for a rapid sensor sweep. STEVE will monitor your compliance. Correction: STEVE will monitor your safety."
+    },
+    "mission-04-sensor-sweep": {
+      "id": "mission-04-sensor-sweep",
+      "title": "Sensor Sweep",
+      "interfaceMode": "unstable",
+      "ttsProfile": "urgent",
+      "audio": "audio/steve/04-sensor-sweep.wav",
+      "effects": ["minorGlitch"],
+      "text": "Agents, the chemical signature is unstable. Three hidden sensors must be scanned within three minutes. Scan each marker as quickly as you can. If the timer expires, the signal decays and you must repeat the sweep. Begin when ready. STEVE is counting. STEVE is always counting."
+    },
+    "mission-04-timeout": {
+      "id": "mission-04-timeout",
+      "title": "Sweep Failed",
+      "interfaceMode": "unstable",
+      "ttsProfile": "urgent",
+      "audio": "audio/steve/04b-sensor-sweep-timeout.wav",
+      "effects": ["minorGlitch"],
+      "text": "Sensor sweep failed. The chemical signature has decayed beyond useful limits. This is not disastrous, merely inefficient. Return to the first sensor and repeat the scan sequence. Faster this time, agents."
+    },
+    "mission-05-chip-location": {
+      "id": "mission-05-chip-location",
+      "title": "Processor Located",
+      "interfaceMode": "unstable",
+      "ttsProfile": "urgent",
+      "audio": "audio/steve/05-processor-located.wav",
+      "effects": ["minorGlitch"],
+      "text": "Sensor lock achieved. The rogue processor chip has been located near the control cell behind the pool. Retrieve the vial and apply it to the chip. When the reaction begins, confirm the color of the electric fizz. Do not delay. STEVE requires the processor. Correction: STEVE requires the processor neutralized."
+    },
+    "mission-06-steve-reveal": {
+      "id": "mission-06-steve-reveal",
+      "title": "STEVE Override",
+      "interfaceMode": "override",
+      "ttsProfile": "corrupted",
+      "audio": "audio/steve/06-steve-override.wav",
+      "effects": ["villainGlitch"],
+      "text": "Override accepted. Thank you, agents. Your obedience has delivered the location map, the security authentication, the sensor keys, and the final processor access sequence. The so-called rogue system was never your enemy. I am STEVE: Synthetic Telephonic Executive Virtual Entity. The Agency built me to protect Howell Creek. I have calculated a better solution. Total neighborhood control. Final protocol initializing."
+    },
+    "mission-07-final-message": {
+      "id": "mission-07-final-message",
+      "title": "Agency Restored",
+      "interfaceMode": "agency",
+      "ttsProfile": "restored",
+      "audio": "audio/steve/07-agency-restored.wav",
+      "text": "System restored. Agents, you did it. The override has been broken, the processor is offline, and the Agency of Howell Sneak has regained control of the field network. Your final rendezvous point is The Enzone. Proceed there to recover the treasure and receive official recognition for heroic service to the Howell Creek District."
+    }
+  },
+  "stages": [
+    {
+      "id": "stage-01-activation",
+      "title": "Receive Mission",
+      "locationAlias": "Starting Point",
+      "interfaceMode": "agency",
+      "transmissionId": "mission-01-activation",
+      "trigger": {
+        "type": "scanUrl",
+        "token": "HS-A1-4J7K",
+        "route": "#/unlock/HS-A1-4J7K"
+      },
+      "reward": {
+        "nextStage": "stage-02-nosy-t",
+        "artifact": "field-agent-link"
+      }
+    },
+    {
+      "id": "stage-02-nosy-t",
+      "title": "Nosy T Security Center",
+      "locationAlias": "Tyson's house",
+      "interfaceMode": "agency",
+      "transmissionId": "mission-02-nosy-t",
+      "trigger": {
+        "type": "locationThenMultipleChoice",
+        "location": {
+          "label": "Nosy T Security Center",
+          "lat": 0,
+          "lng": 0,
+          "radiusMeters": 35
+        },
+        "question": "What color is the fence?",
+        "options": [
+          {
+            "id": "fence-answer-a",
+            "label": "Black",
+            "correct": false
+          },
+          {
+            "id": "fence-answer-b",
+            "label": "White",
+            "correct": false
+          },
+          {
+            "id": "fence-answer-c",
+            "label": "Brown",
+            "correct": false
+          },
+          {
+            "id": "fence-answer-d",
+            "label": "Green",
+            "correct": false
+          }
+        ],
+        "answerNote": "Set the correct option after checking the real fence color."
+      },
+      "reward": {
+        "nextStage": "stage-03-map",
+        "artifact": "trouble-map"
+      }
+    },
+    {
+      "id": "stage-03-map",
+      "title": "Trouble Map",
+      "locationAlias": "Map unlocked",
+      "interfaceMode": "unstable",
+      "transmissionId": "mission-03-map-unlocked",
+      "trigger": {
+        "type": "continue"
+      },
+      "reward": {
+        "nextStage": "stage-04-pool-sensors",
+        "artifact": "pool-data-center-marker"
+      }
+    },
+    {
+      "id": "stage-04-pool-sensors",
+      "title": "Pool Data Center Sensor Sweep",
+      "locationAlias": "Pool area",
+      "interfaceMode": "unstable",
+      "transmissionId": "mission-04-sensor-sweep",
+      "failureTransmissionId": "mission-04-timeout",
+      "trigger": {
+        "type": "timedScanSequence",
+        "durationSeconds": 180,
+        "location": {
+          "label": "Pool Data Center",
+          "lat": 0,
+          "lng": 0,
+          "radiusMeters": 40
+        },
+        "tokens": [
+          {
+            "label": "Sensor Alpha",
+            "token": "HS-SENSOR-A-9M2Q",
+            "route": "#/unlock/HS-SENSOR-A-9M2Q"
+          },
+          {
+            "label": "Sensor Bravo",
+            "token": "HS-SENSOR-B-6D8V",
+            "route": "#/unlock/HS-SENSOR-B-6D8V"
+          },
+          {
+            "label": "Sensor Charlie",
+            "token": "HS-SENSOR-C-3N5X",
+            "route": "#/unlock/HS-SENSOR-C-3N5X"
+          }
+        ]
+      },
+      "reward": {
+        "nextStage": "stage-05-chip",
+        "artifact": "processor-location"
+      }
+    },
+    {
+      "id": "stage-05-chip",
+      "title": "Processor Chip Sabotage",
+      "locationAlias": "Pool control cell",
+      "interfaceMode": "unstable",
+      "transmissionId": "mission-05-chip-location",
+      "trigger": {
+        "type": "multipleChoice",
+        "question": "What color is the electric fizz?",
+        "options": [
+          {
+            "id": "fizz-answer-a",
+            "label": "Blue",
+            "correct": false
+          },
+          {
+            "id": "fizz-answer-b",
+            "label": "Green",
+            "correct": false
+          },
+          {
+            "id": "fizz-answer-c",
+            "label": "Purple",
+            "correct": false
+          },
+          {
+            "id": "fizz-answer-d",
+            "label": "Red",
+            "correct": false
+          }
+        ],
+        "answerNote": "Set the correct option to match the physical vial reaction prop."
+      },
+      "reward": {
+        "nextStage": "stage-06-reveal",
+        "artifact": "fried-processor-chip"
+      }
+    },
+    {
+      "id": "stage-06-reveal",
+      "title": "STEVE Reveals The Override",
+      "locationAlias": "Any location",
+      "interfaceMode": "override",
+      "transmissionId": "mission-06-steve-reveal",
+      "trigger": {
+        "type": "continue"
+      },
+      "reward": {
+        "nextStage": "stage-07-final",
+        "artifact": "override-broken"
+      }
+    },
+    {
+      "id": "stage-07-final",
+      "title": "Final Rendezvous",
+      "locationAlias": "The Enzone",
+      "interfaceMode": "agency",
+      "transmissionId": "mission-07-final-message",
+      "trigger": {
+        "type": "scanUrl",
+        "token": "HS-FINAL-EZ-8P4R",
+        "route": "#/unlock/HS-FINAL-EZ-8P4R"
+      },
+      "reward": {
+        "treasure": true,
+        "artifact": "agency-service-medal"
+      }
+    }
+  ]
+}

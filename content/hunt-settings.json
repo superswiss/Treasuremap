@@ -1,0 +1,31 @@
+{
+  "organizerPin": "1980",
+  "howell": {
+    "locations": {
+      "security": null,
+      "pool": null,
+      "alpha": null,
+      "bravo": null,
+      "charlie": null,
+      "processor": null,
+      "treasure": null
+    },
+    "fenceAnswer": "",
+    "fizzAnswer": "",
+    "shutdownPhrase": "TRUST YOUR TEAM",
+    "sensorSeconds": 180,
+    "captureRadiusMeters": 18,
+    "arrivalRadiusMeters": 35
+  },
+  "pirate": {
+    "locations": { "clue1": null, "clue2": null, "clue3": null, "clue4": null, "clue5": null, "treasure": null },
+    "clues": [
+      { "title": "The First Bearing", "question": "", "options": [], "answer": "" },
+      { "title": "The Lookout", "question": "", "options": [], "answer": "" },
+      { "title": "The Castaway's Mark", "question": "", "options": [], "answer": "" },
+      { "title": "The Captain's Compass", "question": "", "options": [], "answer": "" },
+      { "title": "The Last Bearing", "question": "", "options": [], "answer": "" }
+    ],
+    "arrivalRadiusMeters": 35
+  }
+}
