@@ -8,7 +8,7 @@ const output=path.join(root,'dist');
 if(path.dirname(output)!==root||path.basename(output)!=='dist')throw Error('Invalid build target');
 await rm(output,{recursive:true,force:true});
 await mkdir(output,{recursive:true});
-for(const file of ['index.html','style.css','app.js','lib','adventures','content/hunt-settings.json','content/steve-transmissions.json','audio/steve']){
+for(const file of ['index.html','style.css','app.js','setup.html','setup.js','setup.css','lib','adventures','content/hunt-settings.json','content/steve-transmissions.json','audio/steve']){
   const target=path.join(output,file);await mkdir(path.dirname(target),{recursive:true});await cp(path.join(root,file),target,{recursive:true});
 }
 await writeFile(path.join(output,'.nojekyll'),'');

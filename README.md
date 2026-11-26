@@ -110,3 +110,8 @@ node tools/build.mjs
 ```
 
 `npm test` and `npm run build` are equivalents. Optional end-to-end checks are in tests/browser.mjs. They require Playwright and a browser with the local server running. Use `node tests/browser.mjs`; optionally set BROWSER_CHANNEL to msedge or chrome and PLAYWRIGHT_MODULE to an installed Playwright package path. Browser tests emulate location and do not substitute for an outdoor phone test.
+
+## Guided setup with a clickable map
+
+Open setup.html on the hosted site, or Organizer access → Setup & readiness → Open guided setup. Select a checkpoint, click the map, or drag its selected pin. Answer the form questions and choose Download configuration. Attach the resulting hunt-settings.json file in chat for integration. Incomplete drafts can be downloaded too. Drafts save automatically in this browser; Use in this browser applies the setup locally. Import configuration lets you reopen a downloaded plan. Publishing still requires replacing content/hunt-settings.json and deploying.
+
