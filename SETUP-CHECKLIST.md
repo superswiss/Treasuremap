@@ -6,15 +6,34 @@ Send the following in chat, or use it to fill content/hunt-settings.json. One ad
 
 | Spot | Information needed |
 | --- | --- |
-| Starting point | Where the activation QR/NFC marker will be placed; GPS is not required here |
+| SNAVE Estates | Where Commander Evans will hand out agent badges and deliver the opening briefing |
 | Nosy T Security Center | Coordinates and actual fence color: Black, White, Brown, or Green |
+| Lake Mystery | Coordinates for the observation point and placement of the Acidic Quantum Fluid vial among the old equipment props |
 | Pool staging point | Coordinates for a safe starting area |
 | Sensor Alpha | Coordinates for its safe capture position |
 | Sensor Bravo | Coordinates for its safe capture position |
 | Sensor Charlie | Coordinates for its safe capture position |
-| Processor prop | Coordinates and indicator color: Blue, Green, Purple, or Red |
+| Pool control switch | Placement for the freestanding prop and its hidden confirmation clue |
 | The Enzone / treasure | Coordinates and where the final marker/treasure will be placed |
 | Audio signal | Speaker placement, or a decision to use WAV upload only |
+
+### Agent badges
+
+- [ ] Confirm each player's agent name and make one badge per player with an embedded NFC tag.
+- [ ] Program each tag with a personalized link to the deployed game. When an agent taps their badge, the site should open the mission start and read their agent name aloud.
+- [ ] Test each badge on the phones the players will use. Verify that the correct name is spoken and the game opens at the start.
+
+### Lake Mystery vial
+
+- [ ] Fill a small, leakproof plastic vial with white vinegar. Make one per team and apply the **Acidic Quantum Fluid** label from the transmission script. The label identifies the fluid and explains that it can damage the datacenter's quantum controller and shut down the system.
+- [ ] Stage the sealed vial among old equipment props at the marked Lake Mystery observation point. Verify that agents can spot and retrieve it from the path.
+
+### Pool control switch
+
+- [ ] Build a freestanding switch for the agents to disable after STEVE's reveal. Place it at the pool checkpoint away from the water and pool equipment.
+- [ ] Test that the vinegar carried from Lake Mystery produces a clear color reveal when poured into the switch's open cup of baking soda and food coloring. Set the switch in a spill tray.
+- [ ] Set the game's confirmation question and answer to match what the prop reveals. The current color choices are Blue, Green, Purple, and Red, with Blue configured.
+- [ ] Test that the clue stays hidden until the agents disable the switch, is easy to read outdoors, and can be reset for the next team.
 
 Also confirm:
 
@@ -22,8 +41,6 @@ Also confirm:
 - Start with **35 meters** for arrival and **18 meters** for sensor capture? Tune after testing.
 - Keep shutdown phrase **TRUST YOUR TEAM**? The three journal fragments automatically follow the configured phrase.
 - Keep organizer PIN **1980**? Change it locally if desired. It is a convenience PIN, not secure authentication.
-- Add **Lake Mystery** or **Snave Estates**? Their actual locations and puzzles were not in the supplied material, so this version does not invent stops for them.
-- Which prepared colored prop will players inspect? The app avoids chemical handling and real pool equipment.
 
 ## Captain Barnacle Beard
 
@@ -66,17 +83,18 @@ Player ages / group size / shared or independent phones:
 Target duration / accessibility needs:
 
 HOWELL
+SNAVE Estates badge handout spot / agent names:
 Security coordinates / fence color:
+Lake Mystery coordinates / vial placement:
 Pool start coordinates:
 Alpha coordinates:
 Bravo coordinates:
 Charlie coordinates:
-Processor coordinates / indicator color:
+Pool control switch coordinates / effect / confirmation answer:
 Treasure coordinates / final marker placement:
 Timer (default 180 sec):
 Shutdown phrase (default TRUST YOUR TEAM):
 Audio playback plan:
-Add Lake Mystery / Snave Estates? Location and puzzle idea:
 
 PIRATE
 Stop 1 coordinates / question / choices / answer:

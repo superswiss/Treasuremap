@@ -3,7 +3,7 @@ import {parseSetupConfig} from './lib/setup-config.js';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DRAFT='hidden-trails:setup-draft',LIVE='hidden-trails:settings';
-const points={howell:[['security','Nosy T Security Center'],['pool','Pool · safe starting point'],['alpha','Sensor Alpha'],['bravo','Sensor Bravo'],['charlie','Sensor Charlie'],['processor','Processor prop'],['treasure','The Enzone · treasure']],pirate:[['clue1','Pirate stop 1'],['clue2','Pirate stop 2'],['clue3','Pirate stop 3'],['clue4','Pirate stop 4'],['clue5','Pirate stop 5'],['treasure','X marks the spot · treasure']]};
+const points={howell:[['security','Nosy T Security Center'],['lake','Lake Mystery'],['pool','Pool · safe starting point'],['alpha','Sensor Alpha'],['bravo','Sensor Bravo'],['charlie','Sensor Charlie'],['processor','Processor prop'],['treasure','The Enzone · treasure']],pirate:[['clue1','Pirate stop 1'],['clue2','Pirate stop 2'],['clue3','Pirate stop 3'],['clue4','Pirate stop 4'],['clue5','Pirate stop 5'],['treasure','X marks the spot · treasure']]};
 let config,deployed,map,markers=[],circle,adventure='howell',selected='security';
 function status(text){$('#builder-status').textContent=text;}
 function attempt(fn){return async(...args)=>{try{await fn(...args);}catch(error){status(error.message);}};}

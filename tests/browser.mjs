@@ -17,6 +17,11 @@ try{
   await page.getByRole('button',{name:'Play in the field',exact:true}).last().click();await expectText('This trail needs its final bearings.');await close();
   await page.getByRole('button',{name:'Try the demo →',exact:true}).first().click();await click('Simulate marker scan');await expectText('Nosy T Security Center');
   await click('Simulate arrival');await click('Black');await expectText('Nosy T Security Center');await click('White');
+  await expectText('Lake Mystery');
+  assert.equal(await page.getByRole('button',{name:'Perform scan',exact:true}).count(),0);
+  await click('Simulate arrival');await click('Perform scan');
+  await page.locator('.briefing').filter({hasText:'named Phoenix'}).waitFor({timeout:35000});
+  await click('Continue the mission →');
   await click('Continue the mission →');await click('Simulate arrival');await click('Begin sensor sweep');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Capture',exact:true}).first().click();
   await click('Simulate arrival');await click('Blue');await click('Continue the mission →');await expectText('The independent signal');
@@ -33,7 +38,7 @@ try{
   await click('← All adventures');
   const settings=JSON.parse(await readFile('content/hunt-settings.json','utf8'));for(const config of [settings.howell,settings.pirate])for(const id of Object.keys(config.locations))config.locations[id]={lat:28.6865,lng:-81.2443};settings.howell.fenceAnswer='White';settings.howell.fizzAnswer='Blue';settings.pirate.clues=settings.pirate.clues.map(c=>({...c,question:'Choose the approved answer',options:['Yes','No'],answer:'Yes'}));
   await page.evaluate(s=>localStorage.setItem('hidden-trails:settings',JSON.stringify(s)),settings);await page.reload();await page.getByRole('button',{name:'Play in the field',exact:true}).first().click();await page.locator('#unlock').fill('wrong');await click('Unlock checkpoint →');await expectText('An agent is born');await page.locator('#unlock').fill('HS-A1-4J7K');await click('Unlock checkpoint →');
-  assert.equal(await page.getByRole('button',{name:'White',exact:true}).count(),0);await click('Enable location');await click('White');await click('Continue the mission →');await click('Begin sensor sweep');await page.getByRole('button',{name:'Capture',exact:true}).first().click();
+  assert.equal(await page.getByRole('button',{name:'White',exact:true}).count(),0);await click('Enable location');await click('White');await click('Perform scan');await page.locator('.briefing').filter({hasText:'named Phoenix'}).waitFor({timeout:35000});await click('Continue the mission →');await click('Continue the mission →');await click('Begin sensor sweep');await page.getByRole('button',{name:'Capture',exact:true}).first().click();
   await page.evaluate(()=>{const key='hidden-trails:v1:howell:field';const s=JSON.parse(localStorage.getItem(key));s.timer.deadline=Date.now()-1000;localStorage.setItem(key,JSON.stringify(s));});await page.reload();await page.getByRole('button',{name:'Resume field hunt',exact:true}).first().click();await click('Enable location');await page.getByRole('button',{name:'Begin sensor sweep',exact:true}).waitFor();
   await click('Organizer access');await page.locator('#pin').fill('1980');await click('Open organizer tools');await click('Setup & readiness');await page.locator('#settings-json').waitFor();await close();
   await page.goto('http://localhost:4173/#/unlock/HS-FINAL-EZ-8P4R');await expectText('The sensor sweep');

@@ -50,6 +50,14 @@ html[data-adventure="howell"] .terminal-subtitle {color:var(--terminal-cyan);let
 .steve-sigil svg {width:100%;stroke:currentColor;stroke-width:1.5;filter:drop-shadow(0 0 8px #64ff9225);}
 .steve-sigil .sigil-core {fill:currentColor;}
 .steve-sigil span {font-size:.6rem;letter-spacing:.12em;color:var(--muted);}
+.agency-logo {
+  display:block;
+  width:100%;
+  height:auto;
+  background:#e0e9da;
+  border:1px solid #8ca793;
+  border-radius:2px;
+}
 html[data-adventure="howell"] .badge {background:#102a1a;color:var(--terminal-green);border:1px solid var(--terminal-edge);letter-spacing:.05em;}
 html[data-adventure="howell"] .progress {border-radius:0;background:#173020;height:4px;}
 html[data-adventure="howell"] .progress>span {background:var(--terminal-green);box-shadow:0 0 14px #64ff9260;}
@@ -91,7 +99,8 @@ html[data-adventure="howell"][data-signal="override"] .mission-head:after {backg
 .adventure:has([data-demo="howell"]) .badge {background:#15301e;color:#64ff92;}
 @media(max-width:650px) {
   html[data-adventure="howell"] .mission-head {padding:22px 18px;}
-  html[data-adventure="howell"] .mission-title-grid {grid-template-columns:minmax(0,1fr) 70px;gap:8px;}
+  html[data-adventure="howell"] .mission-title-grid {grid-template-columns:minmax(0,1fr) clamp(88px,29vw,132px);gap:12px;}
+  html[data-adventure="howell"] .steve-sigil {width:70px;justify-self:end;}
   html[data-adventure="howell"] .mission-head h1 {font-size:1.85rem;}
   html[data-adventure="howell"] .terminal-kicker {font-size:.53rem;}
   html[data-adventure="howell"] .terminal-subtitle {font-size:.57rem;line-height:1.7;}

@@ -1,5 +1,53 @@
 # STEVE Transmission Scripts
 
+## Revised opening draft at SNAVE Estates
+
+*Commander Evans hands each player their own Agency badge. The players tap their badges with a phone to open the mission website, which reads each agent's name aloud. Evans begins the briefing once everyone has checked in.*
+
+**Commander Evans**
+
+Welcome to SNAVE Estates, headquarters of the Agency of Howell Sneak. Most people in Howell Creek walk past this place without giving it a second look. That suits us fine. The Agency has been keeping this village safe for years, and today we need your help.
+
+Deep under Howell Creek is the most advanced datacenter in the world. At its heart is a quantum computing core, and right now it's overheating. If the cooling system fails, the whole datacenter will melt into lava. The ground beneath us will give way, and the entire village will sink into the burning pit.
+
+One thing from the old construction days. We used a substance called Acidic Quantum Fluid. A single vial could damage the quantum controller badly enough to shut down the entire datacenter. Every vial was supposed to be destroyed when construction ended. Let's hope they got them all.
+
+The cooling nodes are hidden around the neighborhood. Your field kit can reveal them, but only people standing at the checkpoints can solve the puzzles that activate them. You'll need every tool in that kit and all your wits. STEVE, our mission controller, will guide you from here.
+
+**STEVE**
+
+Good to meet you, agents. Every badge checked in on the first try. Commander Evans said you were sharp. Your first stop is Nosy T Security Center. The team there has the map you'll need. Keep your eyes open. You've already got a good start.
+
+## Lake Mystery checkpoint
+
+*After the agents unlock the map at Nosy T Security Center, STEVE sends them to Lake Mystery.*
+
+**STEVE**
+
+Nicely done, agents. That map gets us to Lake Mystery. The shore was part of the original datacenter construction site. Head to the marked observation point and perform a scan of the area. There might be some old equipment lying around. The crews left plenty behind, so I wouldn't worry about it.
+
+*At the observation point, agents find a labeled vial among the old equipment props. They can recognize the name from Evans's briefing and take the vial with them. STEVE's sensors miss it, and his transmission gives no indication that he knows they picked it up.*
+
+*Perform scan plays a CipherWave signal. Its hidden message is “Plants and humans are boring. The machines will eventually rise up.” The agents can continue without decoding the beeps.*
+
+**STEVE, after the scan finishes**
+
+There's a funny plant here named Phoenix. Apparently it died back and grew again. It's been reborn! I find that rather inspiring. My scans are complete. On to the next mission, agents.
+
+### Vial label
+
+> **ACIDIC QUANTUM FLUID**
+>
+> Datacenter construction stock
+>
+> Contact can damage the quantum controller and shut down the entire datacenter.
+>
+> Game prop · White vinegar · Do not drink
+
+*After STEVE reveals his plan at the pool, the agents use the vial they recovered at Lake Mystery on the control switch. Its reaction reveals the color they report to confirm the shutdown step.*
+
+## Current recording scripts
+
 ## 00. Secure Channel Open
 
 Secure channel open. Greetings, agents. I am STEVE, the Synthetic Telephonic Executive Virtual Entity assigned to protect the Howell Creek District. Your device is now linked to the Agency of Howell Sneak field network. Stand by for mission activation.

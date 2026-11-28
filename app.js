@@ -71,8 +71,14 @@ function renderGame(){
   document.documentElement.dataset.adventure=hunt.id;
   document.documentElement.dataset.signal=s?.interfaceMode||'agency';
   document.querySelector('meta[name="theme-color"]').content=hunt.id==='howell'?'#050b09':'#102b29';
+  let missionMark='';
+  if(hunt.id==='howell'){
+    missionMark=s?.interfaceMode==='override'
+      ? '<div class="steve-sigil" aria-hidden="true"><svg viewBox="0 0 160 130" fill="none"><path d="M20 38V16h24M116 16h24v22M140 92v22h-24M44 114H20V92"/><path d="M16 65 48 37h64l32 28-32 28H48Z"/><circle cx="80" cy="65" r="23"/><circle cx="80" cy="65" r="9" class="sigil-core"/><path d="M80 6v23M80 101v23M2 65h34M124 65h34"/></svg><span>S T E V E / AI–01</span></div>'
+      : '<img class="agency-logo" src="assets/agents-of-howell-sneak.png" alt="Agents of Howell Sneak" width="1536" height="1024">';
+  }
   app.innerHTML=`<button id="back" class="text-button">← All adventures</button>${state.mode==='demo'?'<div class="banner"><strong>DEMO EXERCISE</strong> · Locations and checkpoint scans are simulated. Nothing here confirms your physical location. Demo progress is separate from field progress.</div>':''}
-    <section class="mission-head ${hunt.theme==='pirate'?'pirate':s?.interfaceMode||''}"><div class="row spread"><span class="eyebrow">${esc(hunt.subtitle)}</span><span class="badge dark">${state.mode==='demo'?'DEMO':'FIELD HUNT'}</span></div><div class="mission-title-grid"><div>${hunt.id==='howell'?'<p class="terminal-kicker">AGENCY OF HOWELL SNEAK / FIELD OPERATIONS</p>':''}<h1>${esc(hunt.title)}</h1>${hunt.id==='howell'?`<p class="terminal-subtitle">${s?.interfaceMode==='override'?'CONTROL TRANSFERRED // STEVE OVERRIDE':s?.interfaceMode==='unstable'?'SIGNAL ANOMALY // PROCEED WITH CAUTION':'YOUR EYES. MY INTELLIGENCE. OUR MISSION.'}</p>`:''}</div>${hunt.id==='howell'?'<div class="steve-sigil" aria-hidden="true"><svg viewBox="0 0 160 130" fill="none"><path d="M20 38V16h24M116 16h24v22M140 92v22h-24M44 114H20V92"/><path d="M16 65 48 37h64l32 28-32 28H48Z"/><circle cx="80" cy="65" r="23"/><circle cx="80" cy="65" r="9" class="sigil-core"/><path d="M80 6v23M80 101v23M2 65h34M124 65h34"/></svg><span>S T E V E / AI–01</span></div>':''}</div><div class="row spread"><span>${s?`Checkpoint ${state.completed.length+1} of ${hunt.stages.length}`:'Adventure complete'}</span><span>${Math.round(state.completed.length/hunt.stages.length*100)}% discovered</span></div><div class="progress"><span style="width:${state.completed.length/hunt.stages.length*100}%"></span></div></section>
+    <section class="mission-head ${hunt.theme==='pirate'?'pirate':s?.interfaceMode||''}"><div class="row spread"><span class="eyebrow">${esc(hunt.subtitle)}</span><span class="badge dark">${state.mode==='demo'?'DEMO':'FIELD HUNT'}</span></div><div class="mission-title-grid"><div>${hunt.id==='howell'?'<p class="terminal-kicker">AGENCY OF HOWELL SNEAK / FIELD OPERATIONS</p>':''}<h1>${esc(hunt.title)}</h1>${hunt.id==='howell'?`<p class="terminal-subtitle">${s?.interfaceMode==='override'?'CONTROL TRANSFERRED // STEVE OVERRIDE':s?.interfaceMode==='unstable'?'SIGNAL ANOMALY // PROCEED WITH CAUTION':'YOUR EYES. MY INTELLIGENCE. OUR MISSION.'}</p>`:''}</div>${missionMark}</div><div class="row spread"><span>${s?`Checkpoint ${state.completed.length+1} of ${hunt.stages.length}`:'Adventure complete'}</span><span>${Math.round(state.completed.length/hunt.stages.length*100)}% discovered</span></div><div class="progress"><span style="width:${state.completed.length/hunt.stages.length*100}%"></span></div></section>
     <nav class="tabs" aria-label="Adventure tools">${[['mission','Mission'],['map','Map'],['kit','Field kit'],['journal','Journal']].map(([id,label])=>`<button data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}">${label}</button>`).join('')}</nav><div id="view"></div>`;
   on('#back','click',backHome);document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderGame();});
   if(tab==='mission')renderMission();if(tab==='map')renderMap();if(tab==='kit')renderKit();if(tab==='journal')renderJournal();
@@ -82,11 +88,22 @@ function renderMission(){
   if(!s){view.innerHTML=`<section class="panel narrow"><span class="eyebrow">THE STORY IS YOURS NOW</span><h2 style="margin-top:15px">${hunt.id==='howell'?'Agency restored. Treasure recovered.':'A treasure worthy of a captain.'}</h2><p>You followed every clue and completed ${hunt.stages.length} checkpoints. Your discoveries are saved in the journal.</p><button id="victory-journal">Open your journal →</button></section>`;on('#victory-journal','click',()=>{tab='journal';renderGame();});return;}
   const hintCount=state.hints[s.id]||0;
   view.innerHTML=`<section class="panel narrow"><span class="eyebrow">${esc(hunt.narrator)} / FIELD TRANSMISSION</span><h2 style="margin-top:12px">${esc(s.title)}</h2><p class="briefing">${esc(s.text)}</p>${s.audio&&s.id!=='processor'?`<audio controls preload="none" src="${esc(s.audio)}" aria-label="${esc(s.title)} narration"></audio>`:''}<button id="speak" class="quiet">Read aloud</button><div id="challenge" class="objective"></div><details><summary>Need a nudge? (${hintCount}/${s.hints.length} hints revealed)</summary><div>${s.hints.slice(0,hintCount).map(h=>`<p class="hint">${esc(h)}</p>`).join('')}</div>${hintCount<s.hints.length?'<button id="hint" class="quiet">Reveal next hint</button>':''}</details></section>`;
-  on('#speak','click',()=>{if(!window.speechSynthesis){notify('Read aloud is unavailable. The full text is above.');return;}window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(s.text);utterance.rate=s.interfaceMode==='override'?.82:.94;utterance.pitch=s.interfaceMode==='override'?.58:.92;window.speechSynthesis.speak(utterance);});
-  on('#hint','click',()=>{state.hints[s.id]=hintCount+1;save();renderMission();$('details')?.setAttribute('open','');});
+  on('#speak','click',()=>{if(!window.speechSynthesis){notify('Read aloud is unavailable. The full text is above.');return;}window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance($('.briefing').textContent);utterance.rate=s.interfaceMode==='override'?.82:.94;utterance.pitch=s.interfaceMode==='override'?.58:.92;window.speechSynthesis.speak(utterance);});
+  on('#hint','click',event=>{
+    const count=state.hints[s.id]||0;
+    state.hints[s.id]=count+1;
+    save();
+    const details=event.currentTarget.closest('details');
+    const hint=document.createElement('p');
+    hint.className='hint';
+    hint.textContent=s.hints[count];
+    details.querySelector('div').append(hint);
+    details.querySelector('summary').textContent=`Need a nudge? (${count+1}/${s.hints.length} hints revealed)`;
+    if(count+1===s.hints.length)event.currentTarget.remove();
+  });
   const challenge=$('#challenge');
   if(s.type==='continue'){challenge.innerHTML='<button id="continue">Continue the mission →</button>';on('#continue','click',complete);}
-  if(['geo_quiz','geo_scan','nodes'].includes(s.type))renderLocation(challenge,s);
+  if(['geo_quiz','geo_scan','geo_signal','nodes'].includes(s.type))renderLocation(challenge,s);
   else if(s.type==='scan')renderScan(challenge,s);
   else if(s.type==='audio'){
     challenge.innerHTML='<p>Recover the message in the Field kit, then submit the phrase here.</p><button id="open-cipher" class="quiet">Open CipherWave</button><form id="phrase-form"><label for="phrase">Shutdown phrase</label><input id="phrase" maxlength="120" autocomplete="off" required><button style="margin-top:12px">Break the override →</button></form>';
@@ -108,12 +125,57 @@ function updateLocationUI(){
   }
   const container=$('#arrived-challenge');if(!container)return;
   if(s.type==='nodes'&&state.timer){if(!container.firstChild)renderNodes(container,s);return;}
+  if(s.type==='geo_signal'&&container.dataset.scanStarted)return;
   if(!isArrived(s)){container.innerHTML='';return;}
   if(container.firstChild)return;
   if(s.type==='geo_quiz'){
     container.innerHTML=`<h3 style="margin-top:25px">${esc(s.question)}</h3>${state.mode==='demo'?`<p class="fine">Demo answer: ${esc(answerFor(s))}</p>`:''}<div class="choices">${s.options.map((option,i)=>`<button data-answer="${i}">${esc(option)}</button>`).join('')}</div>`;
     container.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>{if(!isArrived(s)){updateLocationUI();notify('A fresh location fix within range is needed.');return;}if(normalize(s.options[Number(b.dataset.answer)])===normalize(answerFor(s)))complete();else notify('Take another look at the landmark and try again.');});
-  }else if(s.type==='geo_scan')renderScan(container,s);else if(s.type==='nodes')renderNodes(container,s);
+  }else if(s.type==='geo_scan')renderScan(container,s);
+  else if(s.type==='geo_signal')renderAreaScan(container,s);
+  else if(s.type==='nodes')renderNodes(container,s);
+}
+function renderAreaScan(container,s){
+  container.innerHTML='<button id="perform-scan">Perform scan</button><audio hidden></audio><p role="status"></p>';
+  const button=container.querySelector('button');
+  const audio=container.querySelector('audio');
+  const status=container.querySelector('[role="status"]');
+  const briefing=$('.briefing');
+  briefing.setAttribute('aria-live','polite');
+  audio.addEventListener('ended',()=>{
+    if(!audio.isConnected)return;
+    briefing.textContent=s.result;
+    status.textContent='';
+    button.disabled=false;
+    button.textContent='Continue the mission →';
+    button.onclick=complete;
+  });
+  audio.addEventListener('pause',()=>{
+    if(!audio.ended&&audio.isConnected){
+      button.disabled=false;
+      status.textContent='Scan paused. Tap Perform scan to resume.';
+    }
+  });
+  button.onclick=async()=>{
+    if(!container.dataset.scanStarted&&!isArrived(s)){updateLocationUI();return;}
+    window.speechSynthesis?.cancel();
+    button.disabled=true;
+    status.textContent='Scanning…';
+    container.dataset.scanStarted='true';
+    try{
+      if(!audio.src){
+        const {samples,sampleRate}=encodeSignal(s.signal);
+        const url=URL.createObjectURL(new Blob([wavBytes(samples,sampleRate)],{type:'audio/wav'}));
+        resources.push(url);
+        audio.src=url;
+      }
+      await audio.play();
+    }catch{
+      if(!audio.isConnected)return;
+      button.disabled=false;
+      status.textContent='The scan audio could not play. Tap Perform scan to try again.';
+    }
+  };
 }
 function requestLocation(){
   if(!window.isSecureContext){notify('Phone GPS requires HTTPS. Use the GitHub Pages address; localhost works only on this computer.');return;}
