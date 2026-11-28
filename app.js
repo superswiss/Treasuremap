@@ -9,11 +9,12 @@ const $=selector=>document.querySelector(selector);
 const on=(selector,event,callback)=>{const element=$(selector);if(element)element.addEventListener(event,callback);};
 let settings,source,hunts,hunt,state,tab='mission',position=null,watch=null,map=null,mapMarkers=[],timerTick=null,resources=[],organizerOpen=false,untimed=false;
 let demoArrived=false,scannerStream=null,recorder=null,recordStream=null,recordStopTimer=null,signalAudio=null,signalUrl=null,uiGeneration=0;
+let stopHeatScanner=null;
 const storageKey=(id,mode)=>`hidden-trails:v1:${id}:${mode}`;
 const stateKey=()=>storageKey(hunt.id,state.mode);
 function notify(message){$('#notice').textContent=message;$('#notice').classList.add('visible');clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>$('#notice').classList.remove('visible'),6500);}
 function showModal(html){stopMedia();modalBody.innerHTML=html;if(!modal.open)modal.showModal();}
-function stopMedia(){if(recorder?.state==='recording')recorder.stop();recorder=null;clearTimeout(recordStopTimer);recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;scannerStream?.getTracks().forEach(t=>t.stop());scannerStream=null;signalAudio?.pause();signalAudio=null;if(signalUrl){URL.revokeObjectURL(signalUrl);signalUrl=null;}}
+function stopMedia(){stopHeatScanner?.();if(recorder?.state==='recording')recorder.stop();recorder=null;clearTimeout(recordStopTimer);recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;scannerStream?.getTracks().forEach(t=>t.stop());scannerStream=null;signalAudio?.pause();signalAudio=null;if(signalUrl){URL.revokeObjectURL(signalUrl);signalUrl=null;}}
 modal.addEventListener('close',stopMedia);
 function save(){try{localStorage.setItem(stateKey(),JSON.stringify(state));return true;}catch{notify('Progress could not be saved. Export a progress code before leaving this page.');return false;}}
 function load(h,mode){try{const saved=localStorage.getItem(storageKey(h.id,mode));return saved?validateState(JSON.parse(saved),hunts):freshState(h.id,mode);}catch{notify('The previous save could not be read. You can restore an exported progress code.');return freshState(h.id,mode);}}
@@ -70,7 +71,7 @@ function renderGame(){
   document.documentElement.dataset.adventure=hunt.id;
   document.documentElement.dataset.signal=s?.interfaceMode||'agency';
   document.querySelector('meta[name="theme-color"]').content=hunt.id==='howell'?'#050b09':'#102b29';
-  app.innerHTML=`<button id="back" class="text-button">← All adventures</button>${state.mode==='demo'?'<div class="banner"><strong>DEMO EXERCISE</strong> · Locations and scans are simulated. Nothing here confirms your physical location. Demo progress is separate from field progress.</div>':''}
+  app.innerHTML=`<button id="back" class="text-button">← All adventures</button>${state.mode==='demo'?'<div class="banner"><strong>DEMO EXERCISE</strong> · Locations and checkpoint scans are simulated. Nothing here confirms your physical location. Demo progress is separate from field progress.</div>':''}
     <section class="mission-head ${hunt.theme==='pirate'?'pirate':s?.interfaceMode||''}"><div class="row spread"><span class="eyebrow">${esc(hunt.subtitle)}</span><span class="badge dark">${state.mode==='demo'?'DEMO':'FIELD HUNT'}</span></div><div class="mission-title-grid"><div>${hunt.id==='howell'?'<p class="terminal-kicker">AGENCY OF HOWELL SNEAK / FIELD OPERATIONS</p>':''}<h1>${esc(hunt.title)}</h1>${hunt.id==='howell'?`<p class="terminal-subtitle">${s?.interfaceMode==='override'?'CONTROL TRANSFERRED // STEVE OVERRIDE':s?.interfaceMode==='unstable'?'SIGNAL ANOMALY // PROCEED WITH CAUTION':'YOUR EYES. MY INTELLIGENCE. OUR MISSION.'}</p>`:''}</div>${hunt.id==='howell'?'<div class="steve-sigil" aria-hidden="true"><svg viewBox="0 0 160 130" fill="none"><path d="M20 38V16h24M116 16h24v22M140 92v22h-24M44 114H20V92"/><path d="M16 65 48 37h64l32 28-32 28H48Z"/><circle cx="80" cy="65" r="23"/><circle cx="80" cy="65" r="9" class="sigil-core"/><path d="M80 6v23M80 101v23M2 65h34M124 65h34"/></svg><span>S T E V E / AI–01</span></div>':''}</div><div class="row spread"><span>${s?`Checkpoint ${state.completed.length+1} of ${hunt.stages.length}`:'Adventure complete'}</span><span>${Math.round(state.completed.length/hunt.stages.length*100)}% discovered</span></div><div class="progress"><span style="width:${state.completed.length/hunt.stages.length*100}%"></span></div></section>
     <nav class="tabs" aria-label="Adventure tools">${[['mission','Mission'],['map','Map'],['kit','Field kit'],['journal','Journal']].map(([id,label])=>`<button data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}">${label}</button>`).join('')}</nav><div id="view"></div>`;
   on('#back','click',backHome);document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderGame();});
@@ -175,10 +176,90 @@ function updateMapPosition(){
   if(!map)return;mapMarkers.forEach(m=>m.remove());mapMarkers=[];if(position){mapMarkers.push(L.marker([position.lat,position.lng],{icon:L.divIcon({className:'',html:'<div class="pin player"></div>',iconSize:[16,16]})}).addTo(map).bindPopup('Your latest position'));mapMarkers.push(L.circle([position.lat,position.lng],{radius:position.accuracy,color:'#3881b5',weight:1}).addTo(map));}
 }
 function renderKit(){
-  $('#view').innerHTML=`<section class="panel narrow"><span class="eyebrow">FIELD EQUIPMENT / CW–01</span><h2 style="margin-top:12px">CipherWave</h2><p>Recover a message from an audible dual-tone signal. Every decoded message is checked for transmission errors.</p><div class="banner">Microphone reception is experimental. Start with a WAV upload. Keep the opening low tone and the entire message in your recording.</div><label for="audio-file">Decode an audio file</label><input id="audio-file" type="file" accept="audio/*"><div class="row" style="margin-top:18px"><button id="record" class="quiet">Record microphone</button><button id="stop-record" class="quiet" disabled>Stop & decode</button></div><p id="record-status" class="fine">Recording stays on this device. Maximum recording: 60 seconds.</p><pre id="decoded" aria-live="polite">Awaiting a signal…</pre>${hunt.id==='howell'?'<button id="sample" class="quiet">Download Agency signal (.wav)</button><p class="fine">Organizer: play this signal on a separate device at the audio checkpoint. A file upload also works as a fallback.</p>':'<p class="fine">This adventure does not currently require an audio cipher.</p>'}</section><section class="panel narrow"><h3>Take your progress with you</h3><p>Move your progress and text notes to another device with a copy-and-paste code. Photos remain on this device.</p><button id="transfer" class="quiet">Export / restore progress</button></section>`;
+  $('#view').innerHTML=`<section class="panel narrow"><span class="eyebrow">FIELD EQUIPMENT / CW–01</span><h2 style="margin-top:12px">CipherWave</h2><p>Recover a message from an audible dual-tone signal. Every decoded message is checked for transmission errors.</p><div class="banner">Microphone reception is experimental. Start with a WAV upload. Keep the opening low tone and the entire message in your recording.</div><label for="audio-file">Decode an audio file</label><input id="audio-file" type="file" accept="audio/*"><div class="row" style="margin-top:18px"><button id="record" class="quiet">Record microphone</button><button id="stop-record" class="quiet" disabled>Stop & decode</button></div><p id="record-status" class="fine">Recording stays on this device. Maximum recording: 60 seconds.</p><pre id="decoded" aria-live="polite">Awaiting a signal…</pre>${hunt.id==='howell'?'<button id="sample" class="quiet">Download Agency signal (.wav)</button><p class="fine">Organizer: play this signal on a separate device at the audio checkpoint. A file upload also works as a fallback.</p>':'<p class="fine">This adventure does not currently require an audio cipher.</p>'}</section>
+    <section class="panel narrow">
+      <h2>Heat Scanner</h2>
+      <p>View your surroundings through a red camera filter.</p>
+      <button id="open-heat-scanner" class="quiet">Open Heat Scanner</button>
+    </section>
+    <section class="panel narrow"><h3>Take your progress with you</h3><p>Move your progress and text notes to another device with a copy-and-paste code. Photos remain on this device.</p><button id="transfer" class="quiet">Export / restore progress</button></section>`;
   on('#sample','click',safeRun(()=>{const encoded=encodeSignal(settings.howell.shutdownPhrase);download('agency-signal.wav',wavBytes(encoded.samples,encoded.sampleRate),'audio/wav');}));
   on('#audio-file','change',safeRun(async e=>{const file=e.target.files[0];if(!file)return;if(file.size>25*1024*1024)throw Error('Choose an audio file smaller than 25 MB.');await decodeBlob(file);}));
   on('#record','click',safeRun(startRecording));on('#stop-record','click',()=>{if(recorder?.state==='recording')recorder.stop();});on('#transfer','click',showTransfer);
+  on('#open-heat-scanner','click',showHeatScanner);
+}
+function showHeatScanner(){
+  showModal(`<h2>Heat Scanner</h2>
+    <div class="heat-scanner-view">
+      <video autoplay playsinline muted aria-label="Live camera preview"></video>
+      <span class="heat-scanner-reticle" aria-hidden="true"></span>
+      <div class="heat-scanner-label">
+        <span>Howell Sneak</span>
+        <span class="heat-scanner-prototype">Heat Visor - Nandina Prototype v0.4</span>
+      </div>
+    </div>
+    <p class="fine" id="heat-scanner-status" role="status"></p>
+    <button class="quiet" id="start-heat-camera">Start camera</button>`);
+
+  const view=modalBody.querySelector('.heat-scanner-view');
+  const video=view.querySelector('video');
+  const status=$('#heat-scanner-status');
+  const start=$('#start-heat-camera');
+
+  async function startCamera(){
+    if(!navigator.mediaDevices?.getUserMedia){
+      status.textContent=window.isSecureContext
+        ? 'Preview only. This browser does not provide camera access.'
+        : 'Preview only. Open the HTTPS site to use the camera.';
+      start.hidden=true;
+      return;
+    }
+
+    let stream;
+    const tracking=new AbortController();
+    const stop=(message='Camera paused. Tap Start camera to resume.')=>{
+      if(stopHeatScanner!==stop)return;
+      stopHeatScanner=null;
+      tracking.abort();
+      stream?.getTracks().forEach(track=>track.stop());
+      video.srcObject=null;
+      view.classList.remove('live');
+      start.hidden=false;
+      status.textContent=message;
+    };
+    stopHeatScanner=stop;
+    start.hidden=true;
+    status.textContent='Waiting for camera access…';
+
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+      if(stopHeatScanner!==stop||!modal.open){
+        stream.getTracks().forEach(track=>track.stop());
+        return;
+      }
+      stream.getVideoTracks()[0].addEventListener('ended',()=>stop('Camera disconnected. Tap Start camera to try again.'),{once:true});
+      video.srcObject=stream;
+      await video.play();
+      if(stopHeatScanner!==stop||!modal.open)return;
+      view.classList.add('live');
+      status.textContent='Camera live';
+      const updateTracking=found=>{
+        if(tracking.signal.aborted)return;
+        status.textContent=found===null?'Camera live · Image tracking unavailable.':
+          found?'Mega AI Chip 01 detected':'Camera live';
+      };
+      import('./lib/heat-ar/hologram.js')
+        .then(({startHeatTracking})=>startHeatTracking(video,view,tracking.signal,updateTracking))
+        .catch(()=>updateTracking(null));
+    }catch(error){
+      stop(error.name==='NotAllowedError'
+        ? 'Preview only. Allow camera access in your browser, then try again.'
+        : 'Preview only. The camera could not start.');
+    }
+  }
+
+  start.addEventListener('click',startCamera);
+  startCamera();
 }
 async function decodeBlob(blob){
   const generation=uiGeneration,output=$('#decoded');if(output)output.textContent='Analyzing signal…';
