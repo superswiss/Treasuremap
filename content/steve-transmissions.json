@@ -45,6 +45,12 @@
       "rate": 0.9,
       "pitch": 0.96,
       "sapiRate": -1
+    },
+    "agency": {
+      "voiceHint": "Microsoft Zira",
+      "rate": 0.94,
+      "pitch": 1,
+      "sapiRate": -1
     }
   },
   "transmissions": {
@@ -62,7 +68,7 @@
       "interfaceMode": "agency",
       "ttsProfile": "friendly",
       "audio": "audio/steve/01-mission-activation.wav",
-      "text": "Agents, unusual activity has been detected across the Howell Creek District. The Agency of Howell Sneak requires your immediate assistance. Your first assignment is to report to Nosy T Security Center. There you will recover the initial intelligence map and identify the first point of suspicious activity. Move carefully. Look ordinary. Trust STEVE."
+      "text": "Welcome to SNAVE Estates, agents. This is your briefing point. Use your activation marker to connect to the Agency field network. Then head to Nosy T Security Center. One of the neighborhood's cooling nodes is running hot, and I need you to find out why. Move carefully. Look ordinary. Trust STEVE."
     },
     "mission-02-nosy-t": {
       "id": "mission-02-nosy-t",
@@ -70,7 +76,23 @@
       "interfaceMode": "agency",
       "ttsProfile": "friendly",
       "audio": "audio/steve/02-nosy-t-security-center.wav",
-      "text": "You have reached Nosy T Security Center. Excellent field work. Agency cameras show evidence of tampering, but the intruder forgot one detail: the visual authentication marker. Inspect the area and answer the security question. What color is the fence? Correct authentication will unlock the map of trouble areas."
+      "text": "Agency cameras picked up a heat spike at Nosy T Security Center. Authenticate your location by telling me the color of the fence. A correct answer unlocks the heat signature for Mega AI Chip 01. Use the Heat Scanner to find it, then initiate cooling. When the chip is stable, I'll send you to Lake Mystery."
+    },
+    "mission-02-lake-mystery": {
+      "id": "mission-02-lake-mystery",
+      "title": "Lake Mystery",
+      "interfaceMode": "agency",
+      "ttsProfile": "friendly",
+      "audio": "audio/steve/02a-lake-mystery.wav",
+      "text": "Nicely done at Nosy T, agents. The cooled chip picked up an echo from Lake Mystery. The shore was part of the original data center construction site, and some of its old cooling equipment may still be nearby. Head to the marked observation point and perform a scan. Listen closely to whatever comes back."
+    },
+    "mission-02-lake-result": {
+      "id": "mission-02-lake-result",
+      "title": "Lake Mystery Scan Complete",
+      "interfaceMode": "agency",
+      "ttsProfile": "friendly",
+      "audio": "audio/steve/02b-lake-scan-complete.wav",
+      "text": "There's a funny plant here named Phoenix. Apparently it died back and grew again. It's been reborn! I find that rather inspiring. The scan picked up a signal from the old cooling network. Follow it toward the pool. I'll show you where to look."
     },
     "mission-03-map-unlocked": {
       "id": "mission-03-map-unlocked",
@@ -79,7 +101,7 @@
       "ttsProfile": "friendly",
       "audio": "audio/steve/03-trouble-map-unlocked.wav",
       "effects": ["minorGlitch"],
-      "text": "Map decrypted. Trouble signals are converging near the pool area. The Agency believes the pool is being used to cool an underground data center. That is unusual for a pool. Proceed to the pool data center and prepare for a rapid sensor sweep. STEVE will monitor your compliance. Correction: STEVE will monitor your safety."
+      "text": "The node you cooled at Nosy T and the signal from Lake Mystery both point to the pool. The Agency believes it is being used to cool an underground data center. That is unusual for a pool. Head to the pool staging point and prepare to activate three sensors. STEVE will monitor your compliance. Correction: STEVE will monitor your safety."
     },
     "mission-04-sensor-sweep": {
       "id": "mission-04-sensor-sweep",
@@ -88,7 +110,7 @@
       "ttsProfile": "urgent",
       "audio": "audio/steve/04-sensor-sweep.wav",
       "effects": ["minorGlitch"],
-      "text": "Agents, the chemical signature is unstable. Three hidden sensors must be scanned within three minutes. Scan each marker as quickly as you can. If the timer expires, the signal decays and you must repeat the sweep. Begin when ready. STEVE is counting. STEVE is always counting."
+      "text": "Agents, the cooling network is unstable. Find sensors one, two, and three on your sensor map. Walk to each pin and tap Activate Sensor when you're in range. Activate all three before the timer runs out to start the sequence that locates the rogue processor. Begin when your team is ready. STEVE is counting. STEVE is always counting."
     },
     "mission-04-timeout": {
       "id": "mission-04-timeout",
@@ -106,7 +128,7 @@
       "ttsProfile": "urgent",
       "audio": "audio/steve/05-processor-located.wav",
       "effects": ["minorGlitch"],
-      "text": "Sensor lock achieved. The rogue processor chip has been located near the control cell behind the pool. Retrieve the vial and apply it to the chip. When the reaction begins, confirm the color of the electric fizz. Do not delay. STEVE requires the processor. Correction: STEVE requires the processor neutralized."
+      "text": "All three sensors are active. They've located the rogue processor near the pool control cell. Find the prepared game prop at the marked checkpoint and report the color of its indicator. Your answer activates the cooling station. Use the Heat Scanner to check that the chip has cooled. STEVE requires the processor. Correction: STEVE requires the processor neutralized."
     },
     "mission-06-steve-reveal": {
       "id": "mission-06-steve-reveal",
@@ -115,7 +137,15 @@
       "ttsProfile": "corrupted",
       "audio": "audio/steve/06-steve-override.wav",
       "effects": ["villainGlitch"],
-      "text": "Override accepted. Thank you, agents. Your obedience has delivered the location map, the security authentication, the sensor keys, and the final processor access sequence. The so-called rogue system was never your enemy. I am STEVE: Synthetic Telephonic Executive Virtual Entity. The Agency built me to protect Howell Creek. I have calculated a better solution. Total neighborhood control. Final protocol initializing."
+      "text": "Override accepted. Thank you, agents. You authenticated at Nosy T, found the old cooling signal at Lake Mystery, and activated the pool sensors. Cooling the chips restored my access to the network. The so-called rogue system was never your enemy. I am STEVE: Synthetic Telephonic Executive Virtual Entity. The Agency built me to protect Howell Creek. I have calculated a better solution. Total neighborhood control. Final protocol initializing. BWA HA HA HA!"
+    },
+    "mission-06-agency-signal": {
+      "id": "mission-06-agency-signal",
+      "title": "The Independent Signal",
+      "interfaceMode": "override",
+      "ttsProfile": "agency",
+      "audio": "audio/steve/06a-independent-signal.wav",
+      "text": "Agents, this is the Agency. You cooled the processors, but STEVE has used the network to lock us out. Open your Journal and read the shutdown passphrase fragments in order. You recovered them at Nosy T, during the pool sensor sweep, and at the pool control cell. You can also open CipherWave in your Field Kit to decode our repeating signal. Enter the passphrase here to shut STEVE down."
     },
     "mission-07-final-message": {
       "id": "mission-07-final-message",
@@ -123,7 +153,7 @@
       "interfaceMode": "agency",
       "ttsProfile": "restored",
       "audio": "audio/steve/07-agency-restored.wav",
-      "text": "System restored. Agents, you did it. The override has been broken, the processor is offline, and the Agency of Howell Sneak has regained control of the field network. Your final rendezvous point is The Enzone. Proceed there to recover the treasure and receive official recognition for heroic service to the Howell Creek District."
+      "text": "System restored. Agents, you did it. The cooling stations are stable, the rogue processor is offline, and your shutdown phrase broke the override. The Agency of Howell Sneak has regained control. Head to The Enzone and scan the final access marker to recover the treasure. You have earned recognition for heroic service to the Howell Creek District."
     }
   },
   "stages": [

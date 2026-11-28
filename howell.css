@@ -70,6 +70,8 @@ html[data-adventure="howell"] .briefing {color:#b5d8c1;font-size:.96rem;line-hei
 html[data-adventure="howell"] .objective {border-color:var(--terminal-edge);padding-left:20px;}
 html[data-adventure="howell"] .choices button {color:#bdffd0;background:#102218;border-color:var(--terminal-edge);}
 html[data-adventure="howell"] .choices button:hover {background:#183d25;}
+html[data-adventure="howell"] :is(button.mission-action,.choices button.mission-action) {background:#ffd187;color:#2a1809;border-color:#ffd187;}
+html[data-adventure="howell"] .mission-confirmation {background:#102a1a;color:#d8ffe3;border-color:var(--terminal-green);}
 html[data-adventure="howell"] :is(.hint,pre) {background:#031008;border:1px solid var(--line);color:#aeffc8;}
 html[data-adventure="howell"] .node {background:#09170f;border-color:var(--terminal-edge);}
 html[data-adventure="howell"] .node.captured {background:#12341e;border-color:var(--terminal-green);}
@@ -83,12 +85,62 @@ html[data-adventure="howell"] .map {background:#102219;border:1px solid var(--te
 html[data-adventure="howell"] :is(.leaflet-popup-content-wrapper,.leaflet-popup-tip) {background:#0b1b11;color:#c5ffd8;}
 html[data-adventure="howell"] .leaflet-control-attribution {background:#07150de8;color:#a8c3b2;}
 html[data-adventure="howell"] .leaflet-control-attribution a {color:#a4ffc2;}
-/* The familiar green terminal develops amber and pink faults as STEVE turns. */
+/* Amber accents foreshadow the black and green override. */
 html[data-adventure="howell"][data-signal="unstable"] .mission-head {border-color:#978349;}
 html[data-adventure="howell"][data-signal="unstable"] .terminal-subtitle {color:#ffe095;}
-html[data-adventure="howell"][data-signal="override"] .mission-head {border-color:#d7648c;background:repeating-linear-gradient(0deg,transparent,transparent 3px,#ff649205 3px,#ff649205 4px),linear-gradient(115deg,#25131d,#0d1010);}
-html[data-adventure="howell"][data-signal="override"] :is(.steve-sigil,.terminal-subtitle) {color:#ff94b8;}
-html[data-adventure="howell"][data-signal="override"] .mission-head:after {background:#ff94b8;}
+html[data-adventure="howell"][data-palette="override"] {--paper:#020403;}
+html[data-adventure="howell"][data-signal="override"] .mission-head {
+  border-color:var(--terminal-green);
+  background:repeating-linear-gradient(0deg,transparent 0 3px,#64ff9208 3px 4px),linear-gradient(115deg,#07130a,#010302);
+}
+html[data-adventure="howell"][data-signal="override"] :is(.steve-sigil,.terminal-subtitle) {color:var(--terminal-green);}
+
+html[data-adventure="howell"][data-palette="agency"] {
+  color-scheme: light;
+  --paper: var(--agency-background);
+  --ink: #183429;
+  --muted: #1e3a30;
+  --line: #65836f;
+  --dark: #c9dfcd;
+  --terminal-green: #185a3b;
+  --terminal-cyan: #225c54;
+  --terminal-edge: #426b51;
+  --agency-panel: color-mix(in srgb,white 64%,var(--paper));
+  --agency-control: color-mix(in srgb,white 38%,var(--paper));
+}
+html[data-adventure="howell"][data-palette="agency"] body {
+  background: radial-gradient(ellipse at 85% 6%, #ffffff4d, transparent 55%),
+    linear-gradient(#264c3911 1px,transparent 1px),
+    linear-gradient(90deg,#264c3911 1px,transparent 1px),var(--paper);
+  background-size: auto,48px 48px,48px 48px,auto;
+}
+html[data-adventure="howell"][data-palette="agency"] button:not(.mission-action,.quiet,.text-button,.danger) {color:#fff;}
+html[data-adventure="howell"][data-palette="agency"] .tabs button {color:var(--muted);}
+html[data-adventure="howell"][data-palette="agency"] .tabs button.active {
+  background:var(--agency-control);
+  color:var(--terminal-green);
+}
+html[data-adventure="howell"][data-palette="agency"] button.quiet {background:var(--agency-panel);color:var(--ink);}
+html[data-adventure="howell"][data-palette="agency"] :is(input,textarea,select) {background:var(--agency-panel);color:var(--ink);}
+html[data-adventure="howell"][data-palette="agency"] :is(input,textarea)::placeholder {color:var(--muted);}
+html[data-adventure="howell"][data-palette="agency"] :is(.panel,dialog,.hint,pre,.banner,.badge,.node,.mission-confirmation,.map) {
+  background:var(--agency-panel);
+  color:var(--ink);
+}
+html[data-adventure="howell"][data-palette="agency"] :is(.badge,.mission-confirmation,.node.captured) {background:var(--agency-control);}
+html[data-adventure="howell"][data-palette="agency"] .mission-head {
+  color:var(--ink);
+  background:linear-gradient(115deg,var(--agency-panel),var(--paper));
+}
+html[data-adventure="howell"][data-palette="agency"] :is(.mission-head h1,.panel h2,.briefing) {color:var(--ink);}
+html[data-adventure="howell"][data-palette="agency"] :is(.mission-head.unstable,.mission-head.unstable .terminal-subtitle) {border-color:#805824;color:#634010;}
+html[data-adventure="howell"][data-palette="agency"] .progress {background:#234e3733;}
+html[data-adventure="howell"][data-palette="agency"] audio {color-scheme:light;}
+html[data-adventure="howell"][data-palette="agency"] :is(.leaflet-popup-content-wrapper,.leaflet-popup-tip,.leaflet-control-attribution) {
+  background:var(--agency-panel);
+  color:var(--ink);
+}
+html[data-adventure="howell"][data-palette="agency"] .leaflet-control-attribution a {color:var(--terminal-green);}
 /* A preview of the terminal on the adventure-selection card. */
 .adventure:has([data-demo="howell"]) {background:#09130d;color:#b4ffcb;border-color:#32764c;border-radius:3px;}
 .adventure:has([data-demo="howell"]) .scene.spy {background:linear-gradient(90deg,#64ff920b 1px,transparent 1px),linear-gradient(#64ff920b 1px,transparent 1px),radial-gradient(ellipse at center,#18482b,#050c08 70%);background-size:24px 24px,24px 24px,auto;color:#64ff92;}

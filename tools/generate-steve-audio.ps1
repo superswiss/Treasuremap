@@ -1,3 +1,5 @@
+param([string[]] $TransmissionId)
+
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
@@ -9,7 +11,7 @@ New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
 Add-Type -AssemblyName System.Speech
 
-$config = Get-Content -LiteralPath $contentPath -Raw | ConvertFrom-Json
+$config = Get-Content -LiteralPath $contentPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
 $voices = $synth.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name }
 
@@ -47,6 +49,9 @@ $generated = @()
 $pythonPath = Find-Python
 
 foreach ($property in $config.transmissions.PSObject.Properties) {
+    if ($TransmissionId -and $property.Name -notin $TransmissionId) {
+        continue
+    }
     $transmission = $property.Value
     $profile = $config.ttsProfiles.$($transmission.ttsProfile)
     $voiceName = Select-VoiceName -Hint $profile.voiceHint

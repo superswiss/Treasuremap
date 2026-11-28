@@ -2,11 +2,18 @@
   "organizerPin": "1980",
   "howell": {
     "locations": {
+      "snave": {
+        "lat": 28.686478,
+        "lng": -81.244408
+      },
       "security": {
         "lat": 28.687743,
         "lng": -81.2454468
       },
-      "lake": null,
+      "lake": {
+        "lat": 28.686793,
+        "lng": -81.243555
+      },
       "pool": {
         "lat": 28.6873877,
         "lng": -81.2359384

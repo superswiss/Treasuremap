@@ -73,13 +73,13 @@ Official instructions: [Pages publishing sources](https://docs.github.com/en/pag
 ## Features and limits
 
 - Two themed adventures, local saves, map, hints, spoken narration, GPS arrival questions, QR/NFC links, timed three-node capture, audio cipher, and a journal.
-- STEVE’s supplied narration and a playable shutdown puzzle between his reveal and the final rendezvous. The processor stage uses revised text/read-aloud instead of the old vial recording: inspect a prepared colored prop; do not mix chemicals or enter pool equipment areas.
-- Leaflet/OpenStreetMap uses completed, current, and locked checkpoint pins, player location, accuracy circles, and live yard distances. Configured future locations are visible as locked pins.
+- Read aloud plays recorded briefings, including the updated processor instructions and Lake Mystery scan result. The shutdown puzzle follows STEVE’s reveal.
+- Leaflet/OpenStreetMap shows red checkpoint pins that turn blue on completion, gray numbered sensor pins, player location, accuracy circles, and live yard distances. Field play includes nearby and arrival chimes.
 - GPS checks require a fix less than 20 seconds old, reported accuracy within the configured radius, and a position within that radius. Inaccurate GPS may require an organizer override.
 - CipherWave uses audible dual tones, an opening synchronization tone, repeated characters, and a checksum. This is a game cipher, not encryption or hidden-in-music steganography. Its new v1 framing is not compatible with the older unframed proof of concept.
 - Microphone recording is capped at 60 seconds. Speaker-to-phone performance requires physical testing. Upload a WAV when reception fails. Very long encoded messages can exceed the recording cap.
 - In-browser QR scanning depends on BarcodeDetector support. The phone’s camera app, NFC links, and typed codes are fallbacks.
-- Progress and notes use localStorage; photos use IndexedDB. Clearing browser data or using private browsing can erase saves. Localhost and the hosted site have different saves. Progress codes include notes, not photos/settings, and are structurally validated but not signed.
+- Progress and notes use localStorage. Photos use IndexedDB. A 10-character code transfers gameplay progress, and a full backup also carries text notes. Save photos separately.
 - The organizer PIN and puzzle answers are visible in client files. The PIN is a convenience control, not a security boundary. Static route coordinates are public to anyone who downloads the app.
 - This is online-first: no service worker or guaranteed offline play. Fonts load from Google Fonts, Leaflet from unpkg, and map tiles from OpenStreetMap. These services and the host receive normal network requests; tile requests reveal the viewed map area. The app does not upload GPS fixes, recordings, photos, notes, or progress and has no analytics backend.
 - Photos are journal memories, not stage triggers. Separate phones play independently; there is no synchronized multiplayer backend.
@@ -89,8 +89,8 @@ Official instructions: [Pages publishing sources](https://docs.github.com/en/pag
 - `adventures/hunts.js`: live stage sequence and story integration.
 - `content/hunt-settings.json`: real locations, answers, timer, radii, PIN.
 - `content/steve-transmissions.json`: existing narrative/audio source. Its older stages section remains reference material; it does not control the live game.
-- `audio/steve/`: existing generated recordings, included in deployment.
-- `content/steve-transmission-scripts.md`, `content/help-and-safety.md`, and `prototype/steveSpeech.ts`: preserved supporting drafts. The app displays updated help and uses plain JavaScript speech.
+- `audio/steve/` and `audio/pirate/` contain the recorded briefings included in deployment.
+- `content/steve-transmission-scripts.md`, `content/help-and-safety.md`, and `prototype/steveSpeech.ts` are supporting drafts. Read aloud falls back to the device voice if a recording cannot play.
 - `lib/`: progress/GPS validation, audio codec, photo storage.
 - `tools/build.mjs`: deployable-file allowlist; unrelated workspace files are excluded.
 

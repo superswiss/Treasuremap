@@ -6,9 +6,9 @@ Send the following in chat, or use it to fill content/hunt-settings.json. One ad
 
 | Spot | Information needed |
 | --- | --- |
-| SNAVE Estates | Where Commander Evans will hand out agent badges and deliver the opening briefing |
+| SNAVE Estates | Badge handout and briefing at 28.686478, -81.244408 |
 | Nosy T Security Center | Coordinates and actual fence color: Black, White, Brown, or Green |
-| Lake Mystery | Coordinates for the observation point and placement of the Acidic Quantum Fluid vial among the old equipment props |
+| Lake Mystery | Observation point at 28.686793, -81.243555. Confirm vial placement among the old equipment props. |
 | Pool staging point | Coordinates for a safe starting area |
 | Sensor Alpha | Coordinates for its safe capture position |
 | Sensor Bravo | Coordinates for its safe capture position |
