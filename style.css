@@ -130,21 +130,16 @@ button.mission-action {
   stroke-linejoin: round;
 }
 .mission-message-notification {
-  position: sticky;
-  top: 8px;
-  z-index: 2;
-  max-width: 760px;
-  margin: 14px 0;
+  margin-left: auto;
 }
 .mission-message-notification #open-mission-message {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-width: min(290px, 100%);
+  gap: 7px;
   text-align: left;
   border-radius: 12px;
-  padding: 11px 15px;
+  padding: 5px 9px;
+  font-size: .77rem;
   box-shadow: 0 5px 16px #08150e28;
 }
 .mission-message {
@@ -186,10 +181,11 @@ html[data-palette="agency"] .mission-message {
   border-radius: 5px 20px 20px;
   background: var(--message-surface);
 }
-.mission-message-bubble h2 {
+.mission-message-bubble h1 {
   margin: 0;
   color: var(--message-ink);
   font-size: clamp(1.25rem, 4vw, 1.55rem);
+  letter-spacing: -.025em;
 }
 .mission-message-bubble .briefing { margin: 9px 0 12px; }
 #view .mission-actions .objective { margin-top: 0; padding-left: 0; border-left: 0; }

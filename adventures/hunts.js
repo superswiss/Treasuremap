@@ -6,13 +6,13 @@ export function createHunts(source, settings) {
     const start = index * size + Math.min(index, extra);
     const text = words.slice(start, start + size + Number(index < extra)).join(' ');
     return text
-      ? {artifact:'Override fragment: '+text,passphraseFragment:text}
+      ? {artifact:'Transmission fragment: '+text,passphraseFragment:text}
       : {artifact:'Agency access key '+(index+1)};
   };
   const spy = (id, title, type, transmissionId, extra = {}) => ({...transmissions[transmissionId],id,title,type,transmissionId,...extra});
   const lakeResult = transmissions['mission-02-lake-result'];
   return [
-    {id:'howell', title:'Operation Howell Creek', subtitle:'The STEVE Protocol', theme:'spy', location:'Howell Creek District', description:'An AI guide. A neighborhood full of secrets. A mission that isn’t what it seems.', narrator:'STEVE', stages:[
+    {id:'howell', title:source.hunt.title, subtitle:'Agency field mission', theme:'spy', location:'Howell Creek District', description:'An AI guide. A neighborhood full of secrets. A mission that isn’t what it seems.', narrator:'STEVE', briefing:source.commanderBriefing, stages:[
       spy('activation','An agent is born','scan','mission-01-activation',{mapLocation:'snave',mapLabel:'SNAVE Estates · Briefing',token:'HS-A1-4J7K',artifact:'Field agent credential',hints:['Your organizer has the activation marker.','Scan its QR code with your phone camera, or tap its NFC tag.','Enter HS-A1-4J7K in the access-code box.']}),
       spy('security','Nosy T Security Center','geo_quiz','mission-02-nosy-t',{location:'security',coolingNode:true,question:'What color is the fence?',options:['Black','White','Brown','Green'],answer:settings.howell.fenceAnswer,demoAnswer:'White',...fragment(0),hints:['Find the fence at the approved security checkpoint.','Look at the fence itself, rather than nearby objects.','Ask your organizer if the fence has changed.']}),
       spy('lake','Lake Mystery','geo_signal','mission-02-lake-mystery',{location:'lake',

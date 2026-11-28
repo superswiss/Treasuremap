@@ -1,6 +1,6 @@
 # Hidden Trails
 
-A phone-friendly static treasure hunt game with two adventures: **Operation Howell Creek: The STEVE Protocol** and **Captain Barnacle Beard’s Lost Treasure**. The demos are playable now. Real-world play stays locked until its route and answers are configured.
+A phone-friendly static treasure hunt game with two adventures: **Operation STEVE: Agents of Howell Sneak** and **Captain Barnacle Beard’s Lost Treasure**. The demos are playable now. Real-world play stays locked until its route and answers are configured.
 
 ## Run on this computer
 

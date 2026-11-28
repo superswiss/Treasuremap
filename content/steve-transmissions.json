@@ -1,7 +1,7 @@
 {
   "hunt": {
     "id": "howell-sneak-steve",
-    "title": "Agency of Howell Sneak: STEVE Protocol",
+    "title": "Operation STEVE: Agents of Howell Sneak",
     "locationName": "Howell Creek District",
     "agencyName": "Agency of Howell Sneak",
     "guideName": "STEVE",
@@ -9,6 +9,16 @@
     "defaultInterfaceMode": "agency",
     "progressLabel": "Agency Dossier",
     "adventureLogLabel": "Field Log"
+  },
+  "commanderBriefing": {
+    "title": "Opening brief from Commander Evans",
+    "paragraphs": [
+      "Welcome to SNAVE Estates, headquarters of the Agency of Howell Sneak. Most people in Howell Creek walk past this place without giving it a second look. That suits us fine. The Agency has been keeping this village safe for years, and today we need your help.",
+      "Deep under Howell Creek is the most advanced datacenter in the world. At its heart is a quantum computing core, and right now it's overheating. If the cooling system fails, the whole datacenter will melt into lava. The ground beneath us will give way, and the entire village will sink into the burning pit.",
+      "One thing from the old construction days. We used a substance called Acidic Quantum Fluid. A single vial could damage the quantum controller badly enough to shut down the entire datacenter. Every vial was supposed to be destroyed when construction ended. Let's hope they got them all.",
+      "We've also received a rogue transmission that broke up into fragments. Recover whatever pieces you find at the checkpoints and keep them together in your Journal. We'll work out what the sender meant once we have the whole message.",
+      "The cooling nodes are hidden around the neighborhood. Your field kit can reveal them, but only people standing at the checkpoints can solve the puzzles that activate them. You'll need every tool in that kit and all your wits. STEVE, our mission controller, will guide you from here."
+    ]
   },
   "privacy": {
     "summary": "Game progress, photos, notes, GPS checks, and audio processing stay on this device. Hosting, external fonts, the map library, and map tiles require network requests. Map tile requests reveal the viewed area to the tile provider.",

@@ -46,9 +46,36 @@ async function verifyNarration(file){
   assert.equal(await recording.evaluate(audio=>audio.paused),true);
 }
 const deployed=JSON.parse(await readFile('content/hunt-settings.json','utf8'));
+const fragmentWords=deployed.howell.shutdownPhrase.split(/\s+/);
+async function verifyFragmentNotice(word){
+  const notice=page.locator('#notice');
+  await notice.waitFor();
+  assert.equal(await notice.textContent(),`Transmission fragment recovered — “${word}”. Open the Journal tab to see what you’ve collected so far.`);
+}
 const palette=()=>page.locator('meta[name="theme-color"]').getAttribute('content');
 try{
-  await page.goto('http://localhost:4173');await expectText('Choose your adventure');
+  await page.goto('http://localhost:4173');
+  const firstMission=page.getByRole('heading',{name:'An agent is born',exact:true});
+  await firstMission.waitFor();
+  assert.equal(await page.locator('.howell-game-mode').textContent(),'Field hunt');
+  assert.equal(await page.locator('#app .mission-head').count(),0);
+  await page.setViewportSize({width:320,height:720});
+  assert.ok((await firstMission.boundingBox()).y<250);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await click('Overview');
+  await page.locator('#modal').getByRole('heading',{name:'Operation STEVE: Agents of Howell Sneak',exact:true}).waitFor();
+  await close();
+  await click('Journal');
+  await page.locator('#commander-briefing summary').click();
+  await page.locator('#commander-briefing p').filter({hasText:'received a rogue transmission'}).waitFor();
+  assert.doesNotMatch(await page.locator('#commander-briefing').textContent(),/shutdown passphrase/i);
+  await expectText('Rogue transmission fragments');
+  await click('Mission');
+  await firstMission.waitFor();
+  await page.setViewportSize({width:390,height:844});
+  await click('← All adventures');await expectText('Choose your adventure');
+  await page.goBack();await firstMission.waitFor();
+  await click('← All adventures');await expectText('Choose your adventure');
   await mkdir('test-results',{recursive:true});await page.screenshot({path:'test-results/home-mobile.png',fullPage:true});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.getByRole('button',{name:'Play in the field',exact:true}).last().click();await expectText('This trail needs its final bearings.');await close();
@@ -93,6 +120,7 @@ try{
   await click('Simulate heat signature');await click('Initiate cooling procedure');
   await page.locator('#modal').getByText('Cooling complete. Well done, agents!',{exact:true}).waitFor();await close();
   await click('Continue to Lake Mystery →');
+  await verifyFragmentNotice(fragmentWords[0]);
   await expectText('Lake Mystery');
   assert.equal(await palette(),'#cfe0d4');
   assert.equal(await page.locator('.tabs').evaluate(tabs=>{const rect=tabs.getBoundingClientRect();return rect.top>=-1&&rect.bottom<=innerHeight;}),true);
@@ -121,7 +149,13 @@ try{
   assert.deepEqual(await page.locator('#sensor-map .sensor-pin').allTextContents(),['1','2','3']);
   await click('Hide sensor map');await click('Simulate arrival');await click('Begin sensor sweep');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Activate sensor',exact:true}).first().click();
+  await verifyFragmentNotice(fragmentWords[1]);
   await click('Simulate arrival');await click('Blue');assert.equal(await palette(),'#020403');
+  await verifyFragmentNotice(fragmentWords[2]);
+  await click('View fragments');await expectText('Rogue transmission fragments');
+  assert.deepEqual(await page.locator('#passphrase-fragments code').allTextContents(),fragmentWords);
+  assert.equal(await page.locator('#assembled-passphrase').count(),0);
+  await click('Mission');
   assert.match(await page.locator('.briefing').textContent(),/BWA HA HA HA!$/);
   await click('Continue the mission →');await expectText('The independent signal');await verifyNarration('06a-independent-signal.wav');
   await click('Open Journal');assert.equal(await page.locator('#assembled-passphrase').textContent(),deployed.howell.shutdownPhrase);
@@ -171,7 +205,8 @@ try{
   await click('Simulate arrival');await click('Simulate marker scan');await expectText('Agency restored. Treasure recovered.');
   await click('Open your journal →');await page.locator('#note').fill('Team Ω found the signal 🗺️');await click('Save note');await page.getByText('Team Ω found the signal 🗺️').waitFor();
   await page.locator('#photo').setInputFiles('test-results/home-mobile.png');await page.locator('.note-photo').waitFor();await click('Delete photo');await page.locator('.note-photo').waitFor({state:'detached'});
-  await page.reload();await page.getByRole('button',{name:'Resume demo →',exact:true}).first().click();await expectText('Agency restored. Treasure recovered.');
+  await page.reload();await expectText('Agency restored. Treasure recovered.');
+  assert.equal(new URL(page.url()).hash,'#/play/howell/demo');
   await click('Field kit');await click('Export / restore progress');
   const code=await page.locator('#export-code').inputValue();assert.equal(code.length,10);
   const [backup]=await Promise.all([page.waitForEvent('download'),click('Download full backup')]);await backup.saveAs('test-results/progress-backup.json');
@@ -208,7 +243,7 @@ try{
   await click('Perform scan');await page.locator('#arrived-challenge audio').evaluate(audio=>audio.playbackRate=8);
   await page.locator('.briefing').filter({hasText:'named Phoenix'}).waitFor({timeout:35000});await click('Continue the mission →');await click('Continue the mission →');
   await dismissArrival('Pool Data Center');await click('Begin sensor sweep');await page.getByRole('button',{name:'Activate sensor',exact:true}).first().click();
-  await page.evaluate(()=>{const key='hidden-trails:v1:howell:field';const s=JSON.parse(localStorage.getItem(key));s.timer.deadline=Date.now()-1000;localStorage.setItem(key,JSON.stringify(s));});await page.reload();await page.getByRole('button',{name:'Resume field hunt',exact:true}).first().click();await click('Enable location');await dismissArrival('Pool Data Center');await page.getByRole('button',{name:'Begin sensor sweep',exact:true}).waitFor();
+  await page.evaluate(()=>{const key='hidden-trails:v1:howell:field';const s=JSON.parse(localStorage.getItem(key));s.timer.deadline=Date.now()-1000;localStorage.setItem(key,JSON.stringify(s));});await page.reload();await expectText('The sensor sweep');await click('Enable location');await dismissArrival('Pool Data Center');await page.getByRole('button',{name:'Begin sensor sweep',exact:true}).waitFor();
   await click('Organizer access');await page.locator('#pin').fill('1980');await click('Open organizer tools');await click('Setup & readiness');await page.locator('#settings-json').waitFor();await close();
   await page.goto('http://localhost:4173/#/unlock/HS-FINAL-EZ-8P4R');await expectText('The sensor sweep');
   await page.screenshot({path:'test-results/mission-mobile.png',fullPage:true});

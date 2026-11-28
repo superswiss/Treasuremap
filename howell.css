@@ -160,3 +160,25 @@ html[data-adventure="howell"][data-palette="agency"] .leaflet-control-attributio
   html[data-adventure="howell"] .tabs {gap:0;}
   html[data-adventure="howell"] .tabs button {padding:12px;font-size:.8rem;}
 }
+
+html[data-adventure="howell"] .masthead {padding:0 clamp(16px,4vw,36px);}
+html[data-adventure="howell"] .masthead .brand-mark {font-size:1.35rem;}
+html[data-adventure="howell"] .masthead .brand small {display:none;}
+html[data-adventure="howell"] .masthead #help {padding:6px 11px;font-size:.75rem;}
+html[data-adventure="howell"] #app {padding-top:5px;}
+.howell-game-bar {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px,2vw,13px);
+}
+.howell-game-bar #back {margin-right:auto;white-space:nowrap;font-size:.78rem;}
+.howell-game-mode {color:var(--muted);font-size:.75rem;white-space:nowrap;}
+.howell-game-bar #open-mission-overview {padding:6px 9px;font-size:.78rem;}
+html[data-adventure="howell"] .tabs {margin:0 0 10px;}
+html[data-adventure="howell"] .tabs button {white-space:nowrap;}
+html[data-adventure="howell"] .mission-message {margin-top:8px;}
+html[data-adventure="howell"] #modal .mission-head {margin-top:0;}
+@media(max-width:390px) {
+  html[data-adventure="howell"] .tabs button {padding-inline:9px;}
+  .howell-game-mode {font-size:.69rem;}
+}

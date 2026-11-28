@@ -87,7 +87,7 @@ test('unconfigured real routes stay blocked; fully configured routes pass',()=>{
 test('custom phrase fragments stay aligned and sweep narration works with a custom timer',()=>{
   const custom=structuredClone(settings);custom.howell.shutdownPhrase='FOLLOW THE HIDDEN TRAIL';custom.howell.sensorSeconds=60;
   const stages=createHunts(source,custom)[0].stages;
-  const fragments=['security','sensors','processor'].map(id=>stages.find(s=>s.id===id).artifact).filter(a=>a.startsWith('Override fragment: ')).map(a=>a.slice('Override fragment: '.length)).join(' ');
+  const fragments=['security','sensors','processor'].map(id=>stages.find(s=>s.id===id).passphraseFragment).join(' ');
   assert.equal(stages.filter(stage=>stage.passphraseFragment).length,3);
   const sweep=stages.find(s=>s.id==='sensors');
   assert.equal(fragments,custom.howell.shutdownPhrase);

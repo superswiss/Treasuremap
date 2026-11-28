@@ -12,6 +12,8 @@ Deep under Howell Creek is the most advanced datacenter in the world. At its hea
 
 One thing from the old construction days. We used a substance called Acidic Quantum Fluid. A single vial could damage the quantum controller badly enough to shut down the entire datacenter. Every vial was supposed to be destroyed when construction ended. Let's hope they got them all.
 
+We've also received a rogue transmission that broke up into fragments. Recover whatever pieces you find at the checkpoints and keep them together in your Journal. We'll work out what the sender meant once we have the whole message.
+
 The cooling nodes are hidden around the neighborhood. Your field kit can reveal them, but only people standing at the checkpoints can solve the puzzles that activate them. You'll need every tool in that kit and all your wits. STEVE, our mission controller, will guide you from here.
 
 **STEVE**

@@ -16,6 +16,8 @@ let readMissionMessage=null;
 let checkpointProximity=null, gameAudio=null, lastSweepTick=null, failedSweep=null;
 const sweepSensors=[['alpha','Sensor Alpha'],['bravo','Sensor Bravo'],['charlie','Sensor Charlie']];
 const howellMissionBackgrounds=['#f3f7ee','#e1ece1','#cfe0d4','#bad0c3','#a5bfb1','#90aa9a'];
+const adventureMenuRoute='#/adventures';
+const playRoute=(id,mode)=>`#/play/${id}/${mode}`;
 const storageKey=(id,mode)=>`hidden-trails:v1:${id}:${mode}`;
 const stateKey=()=>storageKey(hunt.id,state.mode);
 function notify(message){$('#notice').textContent=message;$('#notice').classList.add('visible');clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>$('#notice').classList.remove('visible'),6500);}
@@ -32,6 +34,7 @@ function cleanup(){uiGeneration++;stopSweepUpdates();clearMap();resources.forEac
 function stopLocation(){if(watch!==null)navigator.geolocation?.clearWatch(watch);watch=null;position=null;if(arrivalAlert.open)arrivalAlert.close();}
 function stage(){return hunt?.stages[state.completed.length];}
 function answerFor(s){return state.mode==='demo'?(s.demoAnswer||s.answer):s.answer;}
+function fragmentNotice(fragment){return `Transmission fragment recovered — “${fragment}”. Open the Journal tab to see what you’ve collected so far.`;}
 function complete(){
   const s=stage();
   if(!s)return;
@@ -43,12 +46,21 @@ function complete(){
   demoArrived=false;
   save();
   $('#notice').classList.remove('visible');
-  if(tab!=='mission')notify([`Checkpoint complete · ${s.title}`,s.completionMessage,s.artifact&&`Recovered: ${s.artifact}`].filter(Boolean).join(' '));
+  if(s.passphraseFragment)notify(fragmentNotice(s.passphraseFragment));
+  else if(tab!=='mission')notify([`Checkpoint complete · ${s.title}`,s.completionMessage,s.artifact&&`Recovered: ${s.artifact}`].filter(Boolean).join(' '));
   renderGame();
   $('#mission-confirmation')?.focus({preventScroll:true});
   $('.tabs')?.scrollIntoView({block:'start',behavior:'instant'});
 }
-function backHome(){cleanup();stopLocation();hunt=null;state=null;organizerOpen=false;untimed=false;renderHome();}
+function backHome(){
+  cleanup();stopLocation();hunt=null;state=null;organizerOpen=false;untimed=false;
+  renderHome();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function openAdventureMenu(){
+  if(location.hash!==adventureMenuRoute)history.pushState(null,'',adventureMenuRoute);
+  backHome();
+}
 function safeRun(fn){return async(...args)=>{try{await fn(...args);}catch(error){notify(error.message||'Something went wrong. Please try again.');}};}
 function download(name,data,type='application/json'){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 
@@ -60,7 +72,7 @@ async function boot(){
     hunts=createHunts(source,settings);
     window.addEventListener('hashchange',handleRoute);
     document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMedia();stopMissionNarration?.();document.querySelectorAll('audio').forEach(a=>a.pause());}});
-    on('#help','click',showHelp);on('#organizer','click',openOrganizer);on('.brand','click',e=>{e.preventDefault();history.replaceState(null,'',location.pathname+location.search+'#/');backHome();});handleRoute();
+    on('#help','click',showHelp);on('#organizer','click',openOrganizer);on('.brand','click',event=>{event.preventDefault();openAdventureMenu();});handleRoute();
   }catch(error){app.innerHTML=`<section class="panel"><h1>Let’s get connected.</h1><p>${esc(error.message)}</p><p>Open this app through its local server or GitHub Pages, rather than opening index.html directly.</p><pre>npm start</pre><p>Then visit <a href="http://localhost:4173">http://localhost:4173</a> on this computer.</p></section>`;}
 }
 function renderHome(){
@@ -71,15 +83,18 @@ function renderHome(){
     const saved=load(h,'demo'), field=load(h,'field'), problems=settingsProblems(settings,h.id);
     return `<article class="adventure"><div class="scene ${h.theme}"><span class="eyebrow">${esc(h.subtitle)}</span><span class="scene-symbol" aria-hidden="true">${h.theme==='spy'?'⌖':'⚑'}</span><span class="badge ${h.theme==='spy'?'dark':'amber'}">${h.stages.length} CHECKPOINTS</span></div><div class="card-body"><small class="eyebrow">${esc(h.location)}</small><h3 style="margin-top:12px">${esc(h.title)}</h3><p>${esc(h.description)}</p><div class="meta"><span>◉ Story & discovery</span><span>↗ Play at your pace</span></div><div class="card-bottom"><button data-demo="${h.id}">${saved.completed.length?'Resume demo':'Try the demo'} →</button><button class="quiet" data-field="${h.id}">${field.completed.length?'Resume field hunt':'Play in the field'}</button></div><p class="fine" style="min-height:0;margin-bottom:0">${problems.length?'Field setup needed · demo is ready to explore.':'Field setup complete · organizer route check still required.'}</p></div></article>`;
   }).join('')}</div></section><div class="strip"><div><strong>A little preparation. A lot of discovery.</strong><p>Try a demo from your couch, or bring a configured adventure into the real world. No account needed.</p></div><button id="restore-home" class="quiet">Restore / reset progress</button></div>`;
-  document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>startHunt(b.dataset.demo,'demo'));
-  document.querySelectorAll('[data-field]').forEach(b=>b.onclick=()=>startHunt(b.dataset.field,'field'));
+  document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>startHunt(b.dataset.demo,'demo',true));
+  document.querySelectorAll('[data-field]').forEach(b=>b.onclick=()=>startHunt(b.dataset.field,'field',true));
   on('#restore-home','click',showTransfer);
 }
-function startHunt(id,mode){
-  const h=hunts.find(h=>h.id===id);if(!h)return;
+function startHunt(id,mode,fromMenu=false){
+  const h=hunts.find(h=>h.id===id);if(!h)return false;
   const problems=settingsProblems(settings,id);
-  if(mode==='field'&&problems.length){showModal(`<h2>This trail needs its final bearings.</h2><p>The demo is playable now. Before field play, supply these details in Organizer access → Setup.</p><ul class="checklist">${problems.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`);return;}
+  if(mode==='field'&&problems.length){showModal(`<h2>This trail needs its final bearings.</h2><p>The demo is playable now. Before field play, supply these details in Organizer access → Setup.</p><ul class="checklist">${problems.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`);return false;}
+  if(fromMenu)history.pushState(null,'',playRoute(id,mode));
   cleanup();stopLocation();untimed=false;organizerOpen=false;hunt=h;state=load(h,mode);tab='mission';demoArrived=false;save();renderGame();
+  window.scrollTo({top:0,behavior:'instant'});
+  return true;
 }
 function handleRoute(){
   if(location.hash.startsWith('#/unlock/')){
@@ -88,8 +103,22 @@ function handleRoute(){
     if(!owner){notify('This unlock marker is not part of either adventure.');if(!hunt)renderHome();return;}
     if(!hunt||hunt.id!==owner.id){if(!hunt)renderHome();startHunt(owner.id,'field');}
     if(hunt?.id===owner.id){if(state.mode==='demo'){notify('This link is open in your demo. Field progress is saved separately.');}tryUnlock(token);}
-    history.replaceState(null,'',location.pathname+location.search+'#/');
-  }else if(!hunt)renderHome();else if(location.hash==='#/'||!location.hash)backHome();
+    history.replaceState(null,'',hunt?playRoute(hunt.id,state.mode):adventureMenuRoute);
+    return;
+  }
+  if(!location.hash||location.hash==='#/'){
+    const mode=settingsProblems(settings,'howell').length?'demo':'field';
+    if(hunt?.id!=='howell'||state.mode!==mode)startHunt('howell',mode);
+    return;
+  }
+  const route=location.hash.match(/^#\/play\/(howell|pirate)\/(demo|field)$/);
+  if(route){
+    const [,id,mode]=route;
+    if(hunt?.id===id&&state.mode===mode)return;
+    if(startHunt(id,mode))return;
+    history.replaceState(null,'',adventureMenuRoute);
+  }
+  backHome();
 }
 function renderGame(){
   cleanup();if(!hunt)return;const s=stage();document.title=hunt.title+' · Hidden Trails';
@@ -102,10 +131,20 @@ function renderGame(){
       ? '<div class="steve-sigil" aria-hidden="true"><svg viewBox="0 0 160 130" fill="none"><path d="M20 38V16h24M116 16h24v22M140 92v22h-24M44 114H20V92"/><path d="M16 65 48 37h64l32 28-32 28H48Z"/><circle cx="80" cy="65" r="23"/><circle cx="80" cy="65" r="9" class="sigil-core"/><path d="M80 6v23M80 101v23M2 65h34M124 65h34"/></svg><span>S T E V E / AI–01</span></div>'
       : '<img class="agency-logo" src="assets/agents-of-howell-sneak.png" alt="Agents of Howell Sneak" width="1536" height="1024">';
   }
-  app.innerHTML=`<button id="back" class="text-button">← All adventures</button>${state.mode==='demo'?'<div class="banner"><strong>DEMO EXERCISE</strong> · Locations and checkpoint scans are simulated. Nothing here confirms your physical location. Demo progress is separate from field progress.</div>':''}
-    <section class="mission-head ${hunt.theme==='pirate'?'pirate':s?.interfaceMode||''}"><div class="row spread"><span class="eyebrow">${esc(hunt.subtitle)}</span><span class="badge dark">${state.mode==='demo'?'DEMO':'FIELD HUNT'}</span></div><div class="mission-title-grid"><div>${hunt.id==='howell'?'<p class="terminal-kicker">AGENCY OF HOWELL SNEAK / FIELD OPERATIONS</p>':''}<h1>${esc(hunt.title)}</h1>${hunt.id==='howell'?`<p class="terminal-subtitle">${s?.interfaceMode==='override'?'CONTROL TRANSFERRED // STEVE OVERRIDE':s?.interfaceMode==='unstable'?'SIGNAL ANOMALY // PROCEED WITH CAUTION':'YOUR EYES. MY INTELLIGENCE. OUR MISSION.'}</p>`:''}</div>${missionMark}</div><div class="row spread"><span>${s?`Checkpoint ${state.completed.length+1} of ${hunt.stages.length}`:'Adventure complete'}</span><span>${Math.round(state.completed.length/hunt.stages.length*100)}% discovered</span></div><div class="progress"><span style="width:${state.completed.length/hunt.stages.length*100}%"></span></div></section>
+  const backButton='<button id="back" class="text-button">← All adventures</button>';
+  const demoBanner=state.mode==='demo'?'<div class="banner"><strong>DEMO EXERCISE</strong> · Locations and checkpoint scans are simulated. Nothing here confirms your physical location. Demo progress is separate from field progress.</div>':'';
+  const overview=`
+    <section class="mission-head ${hunt.theme==='pirate'?'pirate':s?.interfaceMode||''}"><div class="row spread"><span class="eyebrow">${esc(hunt.subtitle)}</span><span class="badge dark">${state.mode==='demo'?'DEMO':'FIELD HUNT'}</span></div><div class="mission-title-grid"><div>${hunt.id==='howell'?'<p class="terminal-kicker">AGENCY OF HOWELL SNEAK / FIELD OPERATIONS</p>':''}<h1>${esc(hunt.title)}</h1>${hunt.id==='howell'?`<p class="terminal-subtitle">${s?.interfaceMode==='override'?'CONTROL TRANSFERRED // STEVE OVERRIDE':s?.interfaceMode==='unstable'?'SIGNAL ANOMALY // PROCEED WITH CAUTION':'YOUR EYES. MY INTELLIGENCE. OUR MISSION.'}</p>`:''}</div>${missionMark}</div><div class="row spread"><span>${s?`Checkpoint ${state.completed.length+1} of ${hunt.stages.length}`:'Adventure complete'}</span><span>${Math.round(state.completed.length/hunt.stages.length*100)}% discovered</span></div><div class="progress"><span style="width:${state.completed.length/hunt.stages.length*100}%"></span></div></section>`;
+  const navigation=`
     <nav class="tabs" aria-label="Adventure tools">${[['mission','Mission'],['map','Map'],['kit','Field kit'],['journal','Journal']].map(([id,label])=>`<button data-tab="${id}" class="${tab===id?'active':''}" aria-current="${tab===id?'page':'false'}">${label}</button>`).join('')}</nav><div id="view"></div>`;
-  on('#back','click',backHome);document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderGame();});
+  app.innerHTML=hunt.id==='howell'
+    ? `<div class="howell-game-bar">${backButton}
+        <span class="howell-game-mode">${state.mode==='demo'?'Demo':'Field hunt'}</span>
+        <button id="open-mission-overview" class="quiet" aria-haspopup="dialog">Overview</button>
+      </div>${navigation}`
+    : `${backButton}${demoBanner}${overview}${navigation}`;
+  on('#open-mission-overview','click',()=>showModal(overview+demoBanner));
+  on('#back','click',openAdventureMenu);document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderGame();});
   if(tab==='mission')renderMission();if(tab==='map')renderMap();if(tab==='kit')renderKit();if(tab==='journal')renderJournal();
   if(s?.type==='nodes'&&state.timer)startSweepUpdates();
   updateCheckpointProximity();
@@ -155,25 +194,28 @@ function renderMission(){
   const s=stage();const view=$('#view');
   const previous=hunt.stages[state.completed.length-1];
   const recovery=previous?.passphraseFragment
-    ? ' <span>Passphrase fragment saved to your Journal.</span> <button id="open-earned-fragment" class="quiet">View fragments</button>'
+    ? ` <span>${esc(fragmentNotice(previous.passphraseFragment))}</span> <button id="open-earned-fragment" class="quiet">View fragments</button>`
     : previous?.artifact?` <span>Recovered: ${esc(previous.artifact)}</span>`:'';
   const confirmation=previous?`<div class="mission-confirmation" id="mission-confirmation" role="status" tabindex="-1"><strong>Checkpoint complete · ${esc(previous.title)}</strong>${previous.completionMessage?` <span>${esc(previous.completionMessage)}</span>`:''}${recovery}</div>`:'';
   if(!s){view.innerHTML=`${confirmation}<section class="panel narrow"><span class="eyebrow">THE STORY IS YOURS NOW</span><h2 style="margin-top:15px">${hunt.id==='howell'?'Agency restored. Treasure recovered.':'A treasure worthy of a captain.'}</h2><p>You followed every clue and completed ${hunt.stages.length} checkpoints. Your discoveries are saved in the journal.</p><button id="victory-journal">Open your journal →</button></section>`;on('#victory-journal','click',()=>{tab='journal';renderGame();});return;}
   const hintCount=state.hints[s.id]||0;
   const isHowell=hunt.id==='howell';
   const sender=s.narrator??hunt.narrator;
-  const briefing=`<h2 id="mission-message-title" tabindex="-1">${esc(s.title)}</h2><p class="briefing">${esc(s.text)}</p>
+  const heading=isHowell?'h1':'h2';
+  const briefing=`<${heading} id="mission-message-title" tabindex="-1">${esc(s.title)}</${heading}><p class="briefing">${esc(s.text)}</p>
     <audio id="briefing-audio" preload="none" aria-label="${esc(s.title)} narration" ${isHowell||!s.audio?'hidden':'controls'} ${s.audio?`src="${esc(s.audio)}"`:''}></audio>
     <button id="speak" class="quiet">Read aloud</button>`;
   const actions=`<div id="challenge" class="objective"></div><details><summary>Need a nudge? (${hintCount}/${s.hints.length} hints revealed)</summary><div>${s.hints.slice(0,hintCount).map(h=>`<p class="hint">${esc(h)}</p>`).join('')}</div>${hintCount<s.hints.length?'<button id="hint" class="quiet">Reveal next hint</button>':''}</details>`;
   view.innerHTML=isHowell
-    ? `${confirmation}<div id="mission-message-notification" class="mission-message-notification" hidden>
-        <button id="open-mission-message" class="quiet" aria-controls="mission-message">New message from ${esc(sender)} <span aria-hidden="true">↗</span></button>
-      </div>
-      <section id="mission-message" class="mission-message narrow" aria-labelledby="mission-message-title">
-        <div class="mission-message-sender"><span aria-hidden="true">${esc(sender[0])}</span><strong>${esc(sender)}</strong></div>
+    ? `<section id="mission-message" class="mission-message narrow" aria-labelledby="mission-message-title">
+        <div class="mission-message-sender">
+          <span aria-hidden="true">${esc(sender[0])}</span><strong>${esc(sender)}</strong>
+          <div id="mission-message-notification" class="mission-message-notification" hidden>
+            <button id="open-mission-message" class="quiet" aria-controls="mission-message">New message from ${esc(sender)} <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
         <article class="mission-message-bubble">${briefing}</article>
-      </section>
+      </section>${confirmation}
       <section class="panel narrow mission-actions">${actions}</section>`
     : `${confirmation}<section class="panel narrow"><span class="eyebrow">${esc(sender)} / FIELD TRANSMISSION</span>${briefing}${actions}</section>`;
   updateMissionMessageNotice(s);
@@ -1061,18 +1103,23 @@ async function startRecording(){
 }
 async function renderJournal(){
   const generation=uiGeneration;
+  const briefing=hunt.briefing;
+  const briefingPanel=briefing?`<section class="panel narrow"><details id="commander-briefing">
+    <summary>${esc(briefing.title)}</summary>
+    ${briefing.paragraphs.map(paragraph=>`<p>${esc(paragraph)}</p>`).join('')}
+  </details></section>`:'';
   const fragments=hunt.stages.filter(item=>item.passphraseFragment);
   const earned=fragments.filter(item=>state.completed.includes(item.id));
-  const allEarned=earned.length===fragments.length;
+  const purposeRevealed=state.completed.includes('reveal');
   const fragmentPanel=fragments.length?`<section id="passphrase-fragments" class="panel narrow">
-    <h2>Shutdown passphrase</h2>
-    <p>${earned.length} of ${fragments.length} fragments recovered. Collect them at the checkpoints below and read them in order.</p>
+    <h2>${purposeRevealed?'Shutdown passphrase':'Rogue transmission fragments'}</h2>
+    <p>${earned.length} of ${fragments.length} fragments recovered. Collect them at the checkpoints below${purposeRevealed?' and read them in order':''}.</p>
     <ol class="fragment-list">${fragments.map(item=>`<li><strong>${esc(item.mapLabel?.split(' · ')[0]??item.title)}</strong>
       ${state.completed.includes(item.id)?`<code>${esc(item.passphraseFragment)}</code>`:'<span class="fine">Complete this checkpoint to recover its fragment.</span>'}</li>`).join('')}</ol>
-    ${allEarned?`<p>Assembled passphrase</p><pre id="assembled-passphrase">${esc(earned.map(item=>item.passphraseFragment).join(' '))}</pre>`:''}
+    ${purposeRevealed&&earned.length===fragments.length?`<p>Assembled passphrase</p><pre id="assembled-passphrase">${esc(earned.map(item=>item.passphraseFragment).join(' '))}</pre>`:''}
     ${stage()?.id==='countermeasure'?'<button id="return-from-journal" class="mission-action">Return to shutdown mission</button>':''}
   </section>`:'';
-  $('#view').innerHTML=`${fragmentPanel}<section class="panel narrow"><h2>Your discoveries</h2>${state.completed.length?state.completed.map(id=>{const s=hunt.stages.find(s=>s.id===id);return `<article class="journal-entry"><span class="badge">${esc(s.artifact||'Checkpoint complete')}</span><h3 style="margin-top:12px">${esc(s.title)}</h3><p>${esc(s.text)}</p></article>`;}).join(''):'<p>Your first discovery is waiting. Complete a checkpoint to begin your journal.</p>'}</section><section class="panel narrow"><h3>Field notes</h3>${state.notes.map(n=>`<p>${esc(n.text)}<br><small>${new Date(n.at).toLocaleString()}</small></p>`).join('')}<form id="note-form"><label for="note">Add a note</label><textarea id="note" maxlength="3000" required></textarea><button style="margin-top:12px">Save note</button></form><label for="photo">Add a local photo (up to 8 MB)</label><input id="photo" type="file" accept="image/*"><p class="fine">Photos are journal memories, not checkpoint triggers. Export photos individually before clearing browser data.</p><div id="photos"></div></section>`;
+  $('#view').innerHTML=`${briefingPanel}${fragmentPanel}<section class="panel narrow"><h2>Your discoveries</h2>${state.completed.length?state.completed.map(id=>{const s=hunt.stages.find(s=>s.id===id);return `<article class="journal-entry"><span class="badge">${esc(s.artifact||'Checkpoint complete')}</span><h3 style="margin-top:12px">${esc(s.title)}</h3><p>${esc(s.text)}</p></article>`;}).join(''):'<p>Your first discovery is waiting. Complete a checkpoint to begin your journal.</p>'}</section><section class="panel narrow"><h3>Field notes</h3>${state.notes.map(n=>`<p>${esc(n.text)}<br><small>${new Date(n.at).toLocaleString()}</small></p>`).join('')}<form id="note-form"><label for="note">Add a note</label><textarea id="note" maxlength="3000" required></textarea><button style="margin-top:12px">Save note</button></form><label for="photo">Add a local photo (up to 8 MB)</label><input id="photo" type="file" accept="image/*"><p class="fine">Photos are journal memories, not checkpoint triggers. Export photos individually before clearing browser data.</p><div id="photos"></div></section>`;
   on('#return-from-journal','click',()=>openAdventureTool('mission','#challenge'));
   on('#note-form','submit',e=>{e.preventDefault();if(state.notes.length>=200){notify('This journal already has 200 notes.');return;}const text=$('#note').value.trim();if(!text)return;state.notes.push({text,at:Date.now()});save();renderGame();});
   on('#photo','change',safeRun(async e=>{const file=e.target.files[0];if(file){await addPhoto(stateKey(),file);renderGame();}}));
@@ -1145,6 +1192,7 @@ function replaceProgress(owner,progress){
   cleanup();
   stopLocation();
   hunt=owner;state=progress;untimed=false;organizerOpen=false;demoArrived=false;tab='mission';
+  history.replaceState(null,'',playRoute(owner.id,progress.mode));
   const saved=save();
   modal.close();
   renderGame();
