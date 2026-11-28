@@ -9,9 +9,10 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const $=selector=>document.querySelector(selector);
 const on=(selector,event,callback)=>{const element=$(selector);if(element)element.addEventListener(event,callback);};
 let settings,source,hunts,hunt,state,tab='mission',position=null,watch=null,map=null,mapMarkers=[],timerTick=null,resources=[],organizerOpen=false,untimed=false;
-let demoArrived=false,scannerStream=null,recorder=null,recordStream=null,recordStopTimer=null,signalAudio=null,signalUrl=null,uiGeneration=0;
+let demoArrived=false,scannerStream=null,recordingSession=null,signalAudio=null,signalUrl=null,uiGeneration=0;
 let stopHeatScanner=null;
 let stopMissionNarration=null;
+let readMissionMessage=null;
 let checkpointProximity=null, gameAudio=null, lastSweepTick=null, failedSweep=null;
 const sweepSensors=[['alpha','Sensor Alpha'],['bravo','Sensor Bravo'],['charlie','Sensor Charlie']];
 const howellMissionBackgrounds=['#f3f7ee','#e1ece1','#cfe0d4','#bad0c3','#a5bfb1','#90aa9a'];
@@ -19,7 +20,7 @@ const storageKey=(id,mode)=>`hidden-trails:v1:${id}:${mode}`;
 const stateKey=()=>storageKey(hunt.id,state.mode);
 function notify(message){$('#notice').textContent=message;$('#notice').classList.add('visible');clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>$('#notice').classList.remove('visible'),6500);}
 function showModal(html){stopMedia();modalBody.innerHTML=html;if(!modal.open)modal.showModal();}
-function stopMedia(){stopHeatScanner?.();if(recorder?.state==='recording')recorder.stop();recorder=null;clearTimeout(recordStopTimer);recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;scannerStream?.getTracks().forEach(t=>t.stop());scannerStream=null;signalAudio?.pause();signalAudio=null;if(signalUrl){URL.revokeObjectURL(signalUrl);signalUrl=null;}}
+function stopMedia(){stopHeatScanner?.();recordingSession?.cancel();scannerStream?.getTracks().forEach(t=>t.stop());scannerStream=null;signalAudio?.pause();signalAudio=null;if(signalUrl){URL.revokeObjectURL(signalUrl);signalUrl=null;}}
 modal.addEventListener('close',stopMedia);
 modal.addEventListener('close',updateCheckpointProximity);
 arrivalAlert.addEventListener('click',()=>arrivalAlert.close());
@@ -132,6 +133,23 @@ function openAdventureTool(tool,section){
   renderGame();
   $(section)?.scrollIntoView({block:'start',behavior:'instant'});
 }
+function missionMessageKey(s){
+  return state.scanComplete===s.id?s.id+'-result':s.id;
+}
+function updateMissionMessageNotice(s){
+  const notice=$('#mission-message-notification');
+  if(!notice)return;
+  notice.hidden=readMissionMessage?.save===state&&readMissionMessage.key===missionMessageKey(s);
+}
+function openMissionMessage(s,scroll=false){
+  if(hunt.id!=='howell')return;
+  readMissionMessage={save:state,key:missionMessageKey(s)};
+  updateMissionMessageNotice(s);
+  if(scroll){
+    $('#mission-message-title').focus({preventScroll:true});
+    $('#mission-message').scrollIntoView({block:'start',behavior:'instant'});
+  }
+}
 function renderMission(){
   clearMap();
   const s=stage();const view=$('#view');
@@ -142,7 +160,24 @@ function renderMission(){
   const confirmation=previous?`<div class="mission-confirmation" id="mission-confirmation" role="status" tabindex="-1"><strong>Checkpoint complete · ${esc(previous.title)}</strong>${previous.completionMessage?` <span>${esc(previous.completionMessage)}</span>`:''}${recovery}</div>`:'';
   if(!s){view.innerHTML=`${confirmation}<section class="panel narrow"><span class="eyebrow">THE STORY IS YOURS NOW</span><h2 style="margin-top:15px">${hunt.id==='howell'?'Agency restored. Treasure recovered.':'A treasure worthy of a captain.'}</h2><p>You followed every clue and completed ${hunt.stages.length} checkpoints. Your discoveries are saved in the journal.</p><button id="victory-journal">Open your journal →</button></section>`;on('#victory-journal','click',()=>{tab='journal';renderGame();});return;}
   const hintCount=state.hints[s.id]||0;
-  view.innerHTML=`${confirmation}<section class="panel narrow"><span class="eyebrow">${esc(s.narrator??hunt.narrator)} / FIELD TRANSMISSION</span><h2 style="margin-top:12px">${esc(s.title)}</h2><p class="briefing">${esc(s.text)}</p><audio id="briefing-audio" controls preload="none" aria-label="${esc(s.title)} narration" ${s.audio?`src="${esc(s.audio)}"`:'hidden'}></audio><button id="speak" class="quiet">Read aloud</button><div id="challenge" class="objective"></div><details><summary>Need a nudge? (${hintCount}/${s.hints.length} hints revealed)</summary><div>${s.hints.slice(0,hintCount).map(h=>`<p class="hint">${esc(h)}</p>`).join('')}</div>${hintCount<s.hints.length?'<button id="hint" class="quiet">Reveal next hint</button>':''}</details></section>`;
+  const isHowell=hunt.id==='howell';
+  const sender=s.narrator??hunt.narrator;
+  const briefing=`<h2 id="mission-message-title" tabindex="-1">${esc(s.title)}</h2><p class="briefing">${esc(s.text)}</p>
+    <audio id="briefing-audio" preload="none" aria-label="${esc(s.title)} narration" ${isHowell||!s.audio?'hidden':'controls'} ${s.audio?`src="${esc(s.audio)}"`:''}></audio>
+    <button id="speak" class="quiet">Read aloud</button>`;
+  const actions=`<div id="challenge" class="objective"></div><details><summary>Need a nudge? (${hintCount}/${s.hints.length} hints revealed)</summary><div>${s.hints.slice(0,hintCount).map(h=>`<p class="hint">${esc(h)}</p>`).join('')}</div>${hintCount<s.hints.length?'<button id="hint" class="quiet">Reveal next hint</button>':''}</details>`;
+  view.innerHTML=isHowell
+    ? `${confirmation}<div id="mission-message-notification" class="mission-message-notification" hidden>
+        <button id="open-mission-message" class="quiet" aria-controls="mission-message">New message from ${esc(sender)} <span aria-hidden="true">↗</span></button>
+      </div>
+      <section id="mission-message" class="mission-message narrow" aria-labelledby="mission-message-title">
+        <div class="mission-message-sender"><span aria-hidden="true">${esc(sender[0])}</span><strong>${esc(sender)}</strong></div>
+        <article class="mission-message-bubble">${briefing}</article>
+      </section>
+      <section class="panel narrow mission-actions">${actions}</section>`
+    : `${confirmation}<section class="panel narrow"><span class="eyebrow">${esc(sender)} / FIELD TRANSMISSION</span>${briefing}${actions}</section>`;
+  updateMissionMessageNotice(s);
+  on('#open-mission-message','click',()=>openMissionMessage(s,true));
   bindMissionNarration(s);
   on('#open-earned-fragment','click',()=>openAdventureTool('journal','#passphrase-fragments'));
   on('#hint','click',event=>{
@@ -315,6 +350,7 @@ function bindMissionNarration(stage){
   }
   button.onclick=async()=>{
     if(starting||utterance||!recording.paused){stop();return;}
+    openMissionMessage(stage);
     $('#challenge audio')?.pause();
     if(!recording.hasAttribute('src')){speakOnDevice();return;}
     const attempt=++request;
@@ -341,7 +377,19 @@ function renderLocation(container,s){
     <div id="sensor-map-panel" hidden></div>`:'';
   container.innerHTML=`<h3>Reach the checkpoint</h3><p class="fine">${state.mode==='demo'?'Use the arrival simulator to explore this stage.':'GPS confirms arrival before the challenge opens. Stay on the approved route.'}</p><p id="gps-status" role="status"></p><div class="row"><button id="gps" class="mission-action">${state.mode==='demo'?'Simulate arrival':'Enable location'}</button><button id="stop-gps" class="text-button" ${state.mode==='demo'?'hidden':''}>Stop location</button></div>${sweepGuide}<div id="arrived-challenge"></div>`;
   on('#toggle-sensor-map','click',toggleSensorMap);
-  on('#gps','click',()=>{if(state.mode==='demo'){demoArrived=true;updateLocationUI();}else requestLocation();});on('#stop-gps','click',()=>{stopLocation();updateLocationUI();});updateLocationUI();
+  on('#gps','click',()=>{
+    if(state.mode!=='demo'){requestLocation();return;}
+    if(demoArrived)return;
+    demoArrived=true;
+    const unlocked=unlockGameAudio();
+    if(unlocked){
+      const progress=state;
+      unlocked.then(()=>{if(state===progress&&stage()===s)playCheckpointChime(true);});
+    }else playCheckpointChime(true);
+    updateLocationUI();
+  });
+  on('#stop-gps','click',()=>{stopLocation();updateLocationUI();});
+  updateLocationUI();
 }
 function updateLocationUI(){
   const s=stage();if(!s)return;
@@ -432,7 +480,9 @@ function renderAreaScan(container,s){
     briefing.textContent=s.result;
     const narration=$('#briefing-audio');
     narration.src=s.resultAudio;
-    narration.hidden=false;
+    if(hunt.id==='howell')$('#mission-message-title').textContent=s.title+' scan result';
+    else narration.hidden=false;
+    updateMissionMessageNotice(s);
     button.textContent='Perform scan again';
     button.classList.replace('mission-action','quiet');
     next.hidden=false;
@@ -721,8 +771,17 @@ function renderKit(){
         <div class="row"><button id="decode-agency-signal" class="mission-action">Decode Agency signal</button><button id="return-from-cipher" class="quiet">Return to shutdown mission</button></div>`:''}
       <div class="banner">Microphone reception is experimental. Start with a WAV upload. Record one complete message, including its opening low tone.</div>
       <label for="audio-file">Decode an audio file</label><input id="audio-file" type="file" accept="audio/*">
-      <div class="row" style="margin-top:18px"><button id="record" class="quiet">Record microphone</button><button id="stop-record" class="quiet" disabled>Stop &amp; decode</button></div>
-      <p id="record-status" class="fine">Recording stays on this device. Maximum recording: 60 seconds.</p>
+      <button id="record" class="quiet cipher-record-button">
+        <svg class="record-microphone-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></svg>
+        <svg class="record-stop-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        <span id="record-button-label">Record microphone</span>
+      </button>
+      <div id="record-monitor" class="record-monitor" hidden>
+        <div class="record-monitor-header"><strong>Recording</strong><span id="record-elapsed">0:00</span></div>
+        <svg class="scan-waveform" viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><path d="M0 36 H320" vector-effect="non-scaling-stroke"></path></svg>
+        <p id="record-level" class="fine">Listening for sound</p>
+      </div>
+      <p id="record-status" class="fine" role="status">Recording stays on this device. Maximum recording: 60 seconds.</p>
       <pre id="decoded" aria-live="polite">Awaiting a signal…</pre>
       ${hunt.id==='howell'?'<button id="sample" class="quiet">Download Agency signal (.wav)</button><p class="fine">Organizer: play this signal on a separate device at the audio checkpoint. A file upload also works as a fallback.</p>':'<p class="fine">This adventure does not currently require an audio cipher.</p>'}
     </section>
@@ -738,7 +797,7 @@ function renderKit(){
   on('#sample','click',safeRun(()=>download('agency-signal.wav',agencyRecording(),'audio/wav')));
   on('#return-from-cipher','click',()=>openAdventureTool('mission','#challenge'));
   on('#audio-file','change',safeRun(async e=>{const file=e.target.files[0];if(!file)return;if(file.size>25*1024*1024)throw Error('Choose an audio file smaller than 25 MB.');await decodeBlob(file);}));
-  on('#record','click',safeRun(startRecording));on('#stop-record','click',()=>{if(recorder?.state==='recording')recorder.stop();});on('#transfer','click',showTransfer);
+  on('#record','click',safeRun(()=>recordingSession?recordingSession.stop():startRecording()));on('#transfer','click',showTransfer);
   on('#open-heat-scanner','click',showHeatScanner);
 }
 function showHeatScanner(){
@@ -870,13 +929,135 @@ async function decodeBlob(blob){
   const AudioContext=window.AudioContext||window.webkitAudioContext;if(!AudioContext)throw Error('Audio processing is unavailable in this browser.');const context=new AudioContext();
   try{const buffer=await context.decodeAudioData(await blob.arrayBuffer());if(buffer.duration>90)throw Error('Use an audio clip no longer than 90 seconds.');const mono=new Float32Array(buffer.length);for(let c=0;c<buffer.numberOfChannels;c++){const channel=buffer.getChannelData(c);for(let i=0;i<mono.length;i++)mono[i]+=channel[i]/buffer.numberOfChannels;}await new Promise(r=>setTimeout(r,25));const message=decodeSignal(mono,buffer.sampleRate);if(generation===uiGeneration&&output)output.textContent=message;}catch(error){if(generation===uiGeneration&&output)output.textContent=error.message;throw error;}finally{await context.close();}
 }
+function monitorMicrophone(stream,monitor){
+  const waveform=monitor.querySelector('path');
+  const elapsed=monitor.querySelector('#record-elapsed');
+  const level=monitor.querySelector('#record-level');
+  const started=performance.now();
+  const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+  const samples=new Float32Array(512);
+  let input, analyser, frame;
+  try{
+    analyser=gameAudio?.createAnalyser();
+    if(analyser){
+      analyser.fftSize=samples.length;
+      input=gameAudio.createMediaStreamSource(stream);
+      input.connect(analyser);
+    }
+  }catch{
+    input?.disconnect();
+    analyser=null;
+  }
+  waveform.setAttribute('d','M0 36 H320');
+  elapsed.textContent='0:00';
+  level.textContent=analyser?'Listening for sound':'Waveform unavailable';
+  let lastDraw=-Infinity;
+  function draw(now){
+    frame=requestAnimationFrame(draw);
+    if(now-lastDraw<(reducedMotion.matches?250:32))return;
+    lastDraw=now;
+    const seconds=Math.min(60,Math.floor((now-started)/1000));
+    const time=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+    if(elapsed.textContent!==time)elapsed.textContent=time;
+    if(!analyser)return;
+    analyser.getFloatTimeDomainData(samples);
+    const power=samples.reduce((sum,sample)=>sum+sample**2,0)/samples.length;
+    const hearing=power>=0.000064;
+    const nextLevel=hearing?'Sound detected':'Listening for sound';
+    if(level.textContent!==nextLevel)level.textContent=nextLevel;
+    if(!hearing){waveform.setAttribute('d','M0 36 H320');return;}
+    let path='';
+    for(let i=0;i<=80;i++){
+      const sample=samples[Math.round(i*(samples.length-1)/80)];
+      const y=36-Math.max(-29,Math.min(29,sample*100));
+      path+=`${i?'L':'M'}${i*4} ${y.toFixed(1)} `;
+    }
+    waveform.setAttribute('d',path);
+  }
+  frame=requestAnimationFrame(draw);
+  return ()=>{
+    cancelAnimationFrame(frame);
+    input?.disconnect();
+    analyser?.disconnect();
+    waveform.setAttribute('d','M0 36 H320');
+  };
+}
 async function startRecording(){
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)throw Error('Microphone recording is unavailable. Use an HTTPS page and supported browser, or upload a WAV.');
-  const generation=uiGeneration;const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  if(generation!==uiGeneration){stream.getTracks().forEach(t=>t.stop());return;}recordStream=stream;const chunks=[];recorder=new MediaRecorder(stream);const activeRecorder=recorder;
-  activeRecorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-  activeRecorder.onstop=()=>{clearTimeout(recordStopTimer);stream.getTracks().forEach(t=>t.stop());if(generation===uiGeneration&&tab==='kit'&&!modal.open){$('#record').disabled=false;$('#stop-record').disabled=true;$('#record-status').textContent='Recording ended. You can record again.';safeRun(()=>decodeBlob(new Blob(chunks,{type:activeRecorder.mimeType})))();}};
-  recorder.start();$('#record').disabled=true;$('#stop-record').disabled=false;$('#record-status').textContent='Recording… Play the full signal on the other device, then tap Stop & decode.';recordStopTimer=setTimeout(()=>{if(activeRecorder.state==='recording')activeRecorder.stop();},60000);
+  const button=$('#record');
+  const label=$('#record-button-label');
+  const monitor=$('#record-monitor');
+  const status=$('#record-status');
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){
+    status.textContent='Microphone recording is unavailable. Open the HTTPS site or upload a WAV file.';
+    return;
+  }
+  let stream, recorder, timer, stopMonitor;
+  const chunks=[];
+  const isCurrent=()=>recordingSession===session&&button.isConnected;
+  const setControls=(mode,message)=>{
+    button.disabled=mode==='waiting'||mode==='decoding';
+    button.classList.toggle('is-recording',mode==='recording');
+    label.textContent=mode==='recording'?'Stop & decode':mode==='decoding'?'Decoding…':'Record microphone';
+    monitor.hidden=mode!=='recording';
+    status.textContent=message;
+  };
+  function release(){
+    clearTimeout(timer);
+    stopMonitor?.();
+    stopMonitor=null;
+    stream?.getTracks().forEach(track=>track.stop());
+    stream=null;
+  }
+  const session={
+    stop(){
+      if(recorder?.state!=='recording')return;
+      setControls('decoding','Recording complete. Decoding the signal…');
+      stopMonitor?.();
+      stopMonitor=null;
+      recorder.stop();
+    },
+    cancel(){
+      const active=isCurrent();
+      recordingSession=null;
+      if(recorder?.state==='recording')recorder.stop();
+      release();
+      if(active)setControls('idle','Recording stopped. Tap Record microphone to start again.');
+    },
+  };
+  recordingSession=session;
+  setControls('waiting','Waiting for microphone access…');
+  unlockGameAudio();
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    if(!isCurrent()){release();return;}
+    recorder=new MediaRecorder(stream);
+    recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
+    recorder.onstop=async()=>{
+      release();
+      if(!isCurrent())return;
+      setControls('decoding','Recording complete. Decoding the signal…');
+      try{
+        await decodeBlob(new Blob(chunks,{type:recorder.mimeType}));
+        if(isCurrent())setControls('idle','Signal decoded. You can record again.');
+      }catch(error){
+        if(isCurrent())setControls('idle',error.message||'Could not decode the recording. Try again.');
+      }finally{if(isCurrent())recordingSession=null;}
+    };
+    recorder.onerror=()=>{
+      if(!isCurrent())return;
+      session.cancel();
+      setControls('idle','Microphone recording stopped unexpectedly. Try again.');
+    };
+    recorder.start();
+    setControls('recording','Play the signal now, then tap Stop & decode.');
+    stopMonitor=monitorMicrophone(stream,monitor);
+    timer=setTimeout(()=>session.stop(),60000);
+  }catch(error){
+    if(isCurrent()){
+      session.cancel();
+      setControls('idle',error.name==='NotAllowedError'?'Allow microphone access to record, or upload a WAV file.':'The microphone could not start. Try again or upload a WAV file.');
+    }else release();
+  }
 }
 async function renderJournal(){
   const generation=uiGeneration;

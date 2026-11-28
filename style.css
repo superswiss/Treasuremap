@@ -129,6 +129,110 @@ button.mission-action {
   stroke-width: 2;
   stroke-linejoin: round;
 }
+.mission-message-notification {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  max-width: 760px;
+  margin: 14px 0;
+}
+.mission-message-notification #open-mission-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: min(290px, 100%);
+  text-align: left;
+  border-radius: 12px;
+  padding: 11px 15px;
+  box-shadow: 0 5px 16px #08150e28;
+}
+.mission-message {
+  --message-surface: #10281c;
+  --message-edge: #3b7250;
+  --message-ink: #d7f9e4;
+  --message-accent: #78e9a1;
+  margin: 20px 0 0;
+  scroll-margin-top: 14px;
+}
+html[data-palette="agency"] .mission-message {
+  --message-surface: #e6f2e9;
+  --message-edge: #719682;
+  --message-ink: #163a30;
+  --message-accent: #0d5941;
+}
+.mission-message-sender {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+  color: var(--message-ink);
+  font-size: .85rem;
+}
+.mission-message-sender > span {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border: 1px solid var(--message-accent);
+  border-radius: 50%;
+  background: var(--message-surface);
+  color: var(--message-accent);
+  font-weight: 700;
+}
+.mission-message-bubble {
+  padding: clamp(16px, 4vw, 24px);
+  border: 1px solid var(--message-edge);
+  border-radius: 5px 20px 20px;
+  background: var(--message-surface);
+}
+.mission-message-bubble h2 {
+  margin: 0;
+  color: var(--message-ink);
+  font-size: clamp(1.25rem, 4vw, 1.55rem);
+}
+.mission-message-bubble .briefing { margin: 9px 0 12px; }
+#view .mission-actions .objective { margin-top: 0; padding-left: 0; border-left: 0; }
+.mission-actions details { margin-bottom: 0; }
+.cipher-record-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.cipher-record-button .record-stop-icon,
+.cipher-record-button.is-recording .record-microphone-icon { display: none; }
+.cipher-record-button.is-recording .record-stop-icon { display: inline-block; }
+#field-kit .cipher-record-button.is-recording {
+  background: #922d37;
+  color: #fff;
+  border-color: #922d37;
+}
+.record-monitor {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #aa8565;
+  border-radius: 8px;
+  background: #fff7e7;
+}
+.record-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: .88rem;
+}
+.record-monitor-header strong::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #bb2838;
+}
+.record-monitor .fine { margin: 6px 0 0; }
+.record-monitor .scan-waveform { margin-top: 8px; height: 58px; }
 #field-kit {
   color-scheme: light;
   --ink: #392914;

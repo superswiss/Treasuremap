@@ -53,6 +53,9 @@ try{
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.getByRole('button',{name:'Play in the field',exact:true}).last().click();await expectText('This trail needs its final bearings.');await close();
   await page.getByRole('button',{name:'Try the demo →',exact:true}).first().click();
+  await click('New message from STEVE');
+  assert.equal(await page.locator('#mission-message-title').evaluate(title=>document.activeElement===title),true);
+  assert.equal(await page.locator('#mission-message-notification').isVisible(),false);
   const openingPalette=await palette();assert.equal(openingPalette,'#f3f7ee');
   await verifyNarration('01-mission-activation.wav');await click('Map');
   assert.deepEqual(await page.locator('#map .sensor-pin').allTextContents(),['1','2','3']);
@@ -69,7 +72,22 @@ try{
   assert.equal(await pinColor('#map .house-marker'),'rgb(180, 40, 62)');
   await click('Mission');await click('Simulate marker scan');await expectText('Nosy T Security Center');
   await click('Map');assert.equal(await pinColor('#map .house-marker'),'rgb(36, 101, 167)');await click('Mission');
-  await click('Simulate arrival');await click('Black');await expectText('Nosy T Security Center');await click('White');
+  await page.evaluate(()=>{
+    window.confirmationNotes=[];
+    const createOscillator=AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator=function(){
+      const tone=createOscillator.call(this);
+      const start=tone.start;
+      tone.start=function(...args){window.confirmationNotes.push(Math.round(tone.frequency.value));start.apply(tone,args);};
+      return tone;
+    };
+  });
+  await click('Simulate arrival');
+  await page.waitForFunction(()=>window.confirmationNotes.length===3);
+  assert.deepEqual(await page.evaluate(()=>window.confirmationNotes),[659,784,1047]);
+  await click('Simulate arrival');
+  assert.equal(await page.evaluate(()=>window.confirmationNotes.length),3);
+  await click('Black');await expectText('Nosy T Security Center');await click('White');
   await expectText('Correct! Heat signature unlocked.');await click('Open Heat Scanner');
   assert.equal(await page.getByRole('button',{name:'Initiate cooling procedure',exact:true}).count(),0);
   await click('Simulate heat signature');await click('Initiate cooling procedure');
@@ -83,6 +101,7 @@ try{
   assert.equal(await page.locator('#assembled-passphrase').count(),0);
   await click('Mission');
   await expectText('Checkpoint complete · Nosy T Security Center');
+  await click('New message from STEVE');
   assert.equal(await page.getByRole('button',{name:'Perform scan',exact:true}).count(),0);
   await click('Simulate arrival');await click('Perform scan');
   assert.equal(await page.getByRole('button',{name:'Continue the mission →',exact:true}).count(),0);
@@ -90,6 +109,8 @@ try{
   await page.locator('#arrived-challenge audio').evaluate(audio=>audio.playbackRate=8);
   await page.locator('.briefing').filter({hasText:'named Phoenix'}).waitFor({timeout:35000});
   assert.equal(await page.locator('.scan-waveform path').getAttribute('d'),'M0 36 H320');
+  await click('New message from STEVE');
+  assert.equal(await page.locator('#mission-message-title').textContent(),'Lake Mystery scan result');
   await verifyNarration('02b-lake-scan-complete.wav');
   await click('Perform scan again');await click('Stop scan');
   assert.equal(await page.locator('.scan-waveform path').getAttribute('d'),'M0 36 H320');
@@ -106,6 +127,44 @@ try{
   await click('Open Journal');assert.equal(await page.locator('#assembled-passphrase').textContent(),deployed.howell.shutdownPhrase);
   await click('Return to shutdown mission');
   await click('Open CipherWave');await click('Decode Agency signal');await expectText(deployed.howell.shutdownPhrase);
+  await page.evaluate(async()=>{
+    const {encodeSignal}=await import('/lib/cipher.js');
+    const mic=navigator.mediaDevices;
+    const getUserMedia=mic.getUserMedia.bind(mic);
+    mic.getUserMedia=async constraints=>{
+      if(!constraints.audio)return getUserMedia(constraints);
+      const audio=new AudioContext();
+      await audio.resume();
+      const destination=audio.createMediaStreamDestination();
+      const silence=audio.createConstantSource();
+      silence.offset.value=0;
+      silence.connect(destination);silence.start();
+      window.playTestSignal=()=>{
+        const {samples,sampleRate}=encodeSignal('TEST');
+        const source=audio.createBufferSource();
+        source.buffer=audio.createBuffer(1,samples.length,sampleRate);
+        source.buffer.copyToChannel(samples,0);
+        source.connect(destination);
+        source.onended=()=>{window.testSignalComplete=true;};
+        source.start();
+      };
+      return destination.stream;
+    };
+  });
+  await click('Record microphone');
+  const monitor=page.locator('#record-monitor');
+  await monitor.waitFor();
+  assert.equal(await page.locator('.record-stop-icon').isVisible(),true);
+  assert.equal(await page.locator('.record-microphone-icon').isVisible(),false);
+  assert.equal(await monitor.locator('path').getAttribute('d'),'M0 36 H320');
+  await page.evaluate(()=>window.playTestSignal());
+  await page.waitForFunction(()=>document.querySelector('#record-monitor path').getAttribute('d')!=='M0 36 H320');
+  await page.waitForFunction(()=>window.testSignalComplete);
+  await page.waitForFunction(()=>document.querySelector('#record-monitor path').getAttribute('d')==='M0 36 H320');
+  await click('Stop & decode');
+  await page.waitForFunction(()=>document.querySelector('#decoded').textContent==='TEST');
+  assert.equal(await monitor.isVisible(),false);
+  assert.equal(await page.locator('.record-microphone-icon').isVisible(),true);
   const [download]=await Promise.all([page.waitForEvent('download'),click('Download Agency signal (.wav)')]);await download.saveAs('test-results/agency-signal.wav');
   await page.locator('#audio-file').setInputFiles('test-results/agency-signal.wav');await expectText(deployed.howell.shutdownPhrase);await click('Mission');
   await page.locator('#phrase').fill(deployed.howell.shutdownPhrase.toLowerCase());await click('Break the override →');assert.equal(await palette(),openingPalette);
