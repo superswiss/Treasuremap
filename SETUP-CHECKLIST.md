@@ -28,6 +28,11 @@ Send the following in chat, or use it to fill content/hunt-settings.json. One ad
 - [ ] Fill a small, leakproof plastic vial with white vinegar. Make one per team and apply the **Acidic Quantum Fluid** label from the transmission script. The label identifies the fluid and explains that it can damage the datacenter's quantum controller and shut down the system.
 - [ ] Stage the sealed vial among old equipment props at the marked Lake Mystery observation point. Verify that agents can spot and retrieve it from the path.
 
+### Pre-pool cooling station markers
+
+- [ ] Provide a distinct AR marker image for Nosy T Security Center.
+- [ ] Provide a distinct AR marker image for Lake Mystery.
+
 ### Pool control switch
 
 - [ ] Build a freestanding switch for the agents to disable after STEVE's reveal. Place it at the pool checkpoint away from the water and pool equipment.

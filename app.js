@@ -22,7 +22,17 @@ function cleanup(){uiGeneration++;clearInterval(timerTick);timerTick=null;if(map
 function stopLocation(){if(watch!==null)navigator.geolocation?.clearWatch(watch);watch=null;position=null;}
 function stage(){return hunt?.stages[state.completed.length];}
 function answerFor(s){return state.mode==='demo'?(s.demoAnswer||s.answer):s.answer;}
-function complete(){const s=stage();if(!s)return;state.completed.push(s.id);state.timer=null;demoArrived=false;save();notify(s.artifact?`Recovered: ${s.artifact}`:'Checkpoint complete.');renderGame();}
+function complete(){
+  const s=stage();
+  if(!s)return;
+  state.completed.push(s.id);
+  state.timer=null;
+  demoArrived=false;
+  save();
+  const messages=[s.completionMessage,s.artifact&&`Recovered: ${s.artifact}`].filter(Boolean);
+  notify(messages.join(' ')||'Checkpoint complete.');
+  renderGame();
+}
 function backHome(){cleanup();stopLocation();hunt=null;state=null;organizerOpen=false;untimed=false;renderHome();}
 function safeRun(fn){return async(...args)=>{try{await fn(...args);}catch(error){notify(error.message||'Something went wrong. Please try again.');}};}
 function download(name,data,type='application/json'){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
@@ -251,6 +261,7 @@ function renderKit(){
   on('#open-heat-scanner','click',showHeatScanner);
 }
 function showHeatScanner(){
+  const chipCooled=hunt.id==='howell'&&state.completed.includes('processor');
   showModal(`<h2>Heat Scanner</h2>
     <div class="heat-scanner-view">
       <video autoplay playsinline muted aria-label="Live camera preview"></video>
@@ -305,13 +316,13 @@ function showHeatScanner(){
       if(stopHeatScanner!==stop||!modal.open)return;
       view.classList.add('live');
       status.textContent='Camera live';
-      const updateTracking=found=>{
+      const updateTracking=message=>{
         if(tracking.signal.aborted)return;
-        status.textContent=found===null?'Camera live · Image tracking unavailable.':
-          found?'Mega AI Chip 01 detected':'Camera live';
+        status.textContent=message===null?'Camera live · Image tracking unavailable.':
+          message||'Camera live';
       };
       import('./lib/heat-ar/hologram.js')
-        .then(({startHeatTracking})=>startHeatTracking(video,view,tracking.signal,updateTracking))
+        .then(({startHeatTracking})=>startHeatTracking(video,view,tracking.signal,{chipCooled,onTracking:updateTracking}))
         .catch(()=>updateTracking(null));
     }catch(error){
       stop(error.name==='NotAllowedError'
