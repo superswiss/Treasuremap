@@ -86,6 +86,8 @@ Official instructions: [Pages publishing sources](https://docs.github.com/en/pag
 
 ## Existing material and source layout
 
+The [supporting assets](supporting-assets/README.md) include the 3D-print files and setup instructions for the agent badges and pool control box.
+
 - `adventures/hunts.js`: live stage sequence and story integration.
 - `content/hunt-settings.json`: real locations, answers, timer, radii, PIN.
 - `content/steve-transmissions.json`: existing narrative/audio source. Its older stages section remains reference material; it does not control the live game.
